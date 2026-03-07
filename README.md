@@ -1,6 +1,18 @@
 # openclaw-rpi-dashboards
 
-NixOS configuration for Raspberry Pi 5, built on [nixos-raspberrypi](https://github.com/nvmd/nixos-raspberrypi).
+A Raspberry Pi 5 + 10" touchscreen that acts as a voice-controlled AI dashboard appliance. Say "openclaw", describe what you want, and the [OpenClaw gateway](https://github.com/MartinLoeper/nix-openclaw) builds and displays it — no coding required.
+
+1. **OpenClaw gateway** runs on the Pi, generating dashboards on `localhost:18789`
+2. **Kiosk mode** (Cage + Chromium) shows them fullscreen on the wired display
+3. **Voice wake** ("openclaw", "claude", "computer") triggers dashboard creation
+4. **Talk mode** lets you refine dashboards through continuous conversation
+5. **Claude Max** powers the AI — just a subscription, no API keys
+
+See [docs/vision.md](docs/vision.md) for the full product vision and [docs/hardware.md](docs/hardware.md) for the hardware setup.
+
+---
+
+NixOS configuration built on [nixos-raspberrypi](https://github.com/nvmd/nixos-raspberrypi).
 
 ## Prerequisites
 
@@ -95,6 +107,8 @@ This builds the system locally and copies the closure to the Pi over SSH. The ge
 
 Both share the same system configuration. `nixosSystemFull` includes RPi-optimized package overlays (FFmpeg, Kodi, VLC, libcamera, etc.) globally.
 
+The [OpenClaw gateway](https://github.com/MartinLoeper/nix-openclaw) runs as a systemd service (`openclaw-gateway.service`) on port 18789, serving AI-generated dashboards. It is included in both configurations via `commonModules`. See [docs/openclaw.md](docs/openclaw.md) for details.
+
 ### Kiosk Specialisation
 
 A `kiosk` specialisation is available that launches Cage (Wayland kiosk compositor) + Chromium in fullscreen mode, auto-logged in as the `kiosk` system user. The base system remains CLI-only by default.
@@ -111,3 +125,7 @@ sudo /run/current-system/bin/switch-to-configuration switch
 ```
 
 See [docs/canvas.md](docs/canvas.md) for the full design rationale.
+
+## Documentation
+
+Additional design docs and integration guides live in [`docs/`](docs/).

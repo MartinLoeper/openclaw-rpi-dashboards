@@ -3,6 +3,7 @@
 
   inputs = {
     nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi/main";
+    nix-openclaw.url = "github:MartinLoeper/nix-openclaw/main";
   };
 
   nixConfig = {
@@ -12,7 +13,7 @@
     ];
   };
 
-  outputs = { self, nixos-raspberrypi, ... }:
+  outputs = { self, nixos-raspberrypi, nix-openclaw, ... }:
     let
       commonModules = [
         {
@@ -21,6 +22,18 @@
             raspberry-pi-5.page-size-16k
             raspberry-pi-5.display-vc4
           ];
+        }
+        nix-openclaw.nixosModules.openclaw-gateway
+        {
+          nixpkgs.overlays = [
+            nix-openclaw.overlays.default
+            (final: prev: {
+              sdl3 = prev.sdl3.overrideAttrs (old: {
+                doCheck = false;
+              });
+            })
+          ];
+          services.openclaw-gateway.enable = true;
         }
         ({ pkgs, ... }: {
           boot.loader.raspberry-pi.bootloader = "kernel";
@@ -76,7 +89,7 @@
             services.cage = {
               enable = true;
               user = "kiosk";
-              program = "${pkgs.chromium}/bin/chromium --kiosk --no-first-run --disable-infobars --noerrdialogs --disable-session-crashed-bubble --disable-pinch --overscroll-history-navigation=0 http://localhost";
+              program = "${pkgs.chromium}/bin/chromium --kiosk --no-first-run --disable-infobars --noerrdialogs --disable-session-crashed-bubble --disable-pinch --overscroll-history-navigation=0 http://localhost:18789";
               environment.NIXOS_OZONE_WL = "1";
             };
           };
