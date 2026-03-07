@@ -12,10 +12,9 @@
     ];
   };
 
-  outputs = { self, nixos-raspberrypi, ... }: {
-    nixosConfigurations.rpi5 = nixos-raspberrypi.lib.nixosInstaller {
-      specialArgs = { inherit nixos-raspberrypi; };
-      modules = [
+  outputs = { self, nixos-raspberrypi, ... }:
+    let
+      commonModules = [
         {
           imports = with nixos-raspberrypi.nixosModules; [
             raspberry-pi-5.base
@@ -24,12 +23,13 @@
           ];
         }
         ({ ... }: {
+          boot.loader.raspberry-pi.bootloader = "kernel";
+
           networking.hostName = "openclaw-rpi5";
 
           users.users.nixos = {
             isNormalUser = true;
             extraGroups = [ "wheel" ];
-            initialPassword = "nixos";
           };
 
           services.openssh = {
@@ -42,9 +42,20 @@
           system.stateVersion = "25.05";
         })
       ];
-    };
 
-    installerImages.rpi5 =
-      self.nixosConfigurations.rpi5.config.system.build.sdImage;
-  };
+      commonArgs = {
+        specialArgs = { inherit nixos-raspberrypi; };
+        modules = commonModules;
+      };
+    in
+    {
+      # For ongoing deploys via nixos-rebuild (./deploy.sh)
+      nixosConfigurations.rpi5 = nixos-raspberrypi.lib.nixosSystemFull commonArgs;
+
+      # For building flashable SD images (./build.sh)
+      nixosConfigurations.rpi5-installer = nixos-raspberrypi.lib.nixosInstaller commonArgs;
+
+      installerImages.rpi5 =
+        self.nixosConfigurations.rpi5-installer.config.system.build.sdImage;
+    };
 }
