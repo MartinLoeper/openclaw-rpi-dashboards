@@ -8,6 +8,10 @@
 - **SSH user:** `nixos`
 - **SSH key:** `id_ed25519_rpi5` in repo root (gitignored), set up via `./scripts/setup-ssh.sh`
 
+### Remote build cache
+
+When the user asks to deploy or build an SD image but doesn't mention a remote cache, **ask** whether to use a Hetzner ARM builder as a remote build cache (see `.claude/skills/hetzner-builder.md`). For deploys, prepend `REMOTE_CACHE=<server-ip>` to the deploy command. For SD image builds, build on Hetzner first, then `nix copy` the result locally. This avoids slow local cross-compilation by fetching pre-built packages from the server.
+
 ### "Deploy in background"
 
 When the user says "deploy in background", run the deploy script as a background task:

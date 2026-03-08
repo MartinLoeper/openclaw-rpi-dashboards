@@ -36,16 +36,61 @@ After the server is created, SSH in and install Nix:
 # 1. Install Nix with daemon mode
 ssh root@<server-ip> "curl -L https://nixos.org/nix/install | sh -s -- --daemon --yes"
 
-# 2. Enable flakes
+# 2. Enable flakes and add the RPi binary cache
 ssh root@<server-ip> "bash -lc 'mkdir -p ~/.config/nix && echo \"experimental-features = nix-command flakes\" > ~/.config/nix/nix.conf'"
+ssh root@<server-ip> "cat >> /etc/nix/nix.conf << 'EOF'
+extra-substituters = https://nixos-raspberrypi.cachix.org
+extra-trusted-public-keys = nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI=
+EOF
+systemctl restart nix-daemon"
 
-# 3. Clone the repo and build
-ssh root@<server-ip> "bash -lc 'git clone https://github.com/MartinLoeper/openclaw-rpi-dashboards.git && cd openclaw-rpi-dashboards && nix build .#nixosConfigurations.rpi5.config.system.build.toplevel -L'"
+# 3. Clone the repo
+ssh root@<server-ip> "bash -lc 'git clone https://github.com/MartinLoeper/openclaw-rpi-dashboards.git'"
+
+# 4. Start the build in a tmux session (so it survives SSH disconnects)
+#    Always pull latest changes before building!
+ssh root@<server-ip> "bash -lc 'cd openclaw-rpi-dashboards && git pull && tmux new-session -d -s build \"nix build .#nixosConfigurations.rpi5.config.system.build.toplevel --show-trace -L 2>&1 | tee /tmp/build.log\"'"
 ```
 
-## Copy the build result to the Pi
+### Monitoring the build
 
-After building on the server, copy the closure to the Pi:
+When the user asks to stream or view build logs, suggest running this command in their terminal:
+
+```sh
+ssh root@<server-ip> "tail -f /tmp/build.log"
+```
+
+Other monitoring options:
+
+```sh
+# Check latest output (snapshot, not streaming)
+ssh root@<server-ip> "tail -30 /tmp/build.log"
+
+# Attach to the tmux session interactively
+ssh -t root@<server-ip> "tmux attach -t build"
+```
+
+## Using the build server as a local cache
+
+After the build completes on the server, copy the closure to your local store so `nixos-rebuild` can use it without rebuilding:
+
+```sh
+# Copy the full closure from the server (uses your SSH keys directly)
+REMOTE_PATH="$(ssh root@<server-ip> readlink -f openclaw-rpi-dashboards/result)"
+nix copy --from "ssh://root@<server-ip>" "$REMOTE_PATH" --no-check-sigs
+```
+
+The deploy script supports this via `REMOTE_CACHE`:
+
+```sh
+REMOTE_CACHE=<server-ip> ./scripts/deploy.sh [host] --specialisation kiosk
+```
+
+**Note:** `ssh-ng://` substituters don't work because the nix daemon can't access user SSH keys. The deploy script uses `nix copy` instead, which runs as the user and has access to the SSH agent.
+
+## Deploy from the server
+
+After building on the server, copy the closure directly to the Pi:
 
 ```sh
 # From the build server, copy to Pi
@@ -54,8 +99,6 @@ nix-copy-closure --to nixos@<pi-host> $(readlink -f result)
 # Then activate on the Pi
 ssh nixos@<pi-host> sudo $(readlink -f result)/bin/switch-to-configuration switch
 ```
-
-Alternatively, use the build server as a Nix remote builder (add to `/etc/nix/machines`).
 
 ## Tear down
 

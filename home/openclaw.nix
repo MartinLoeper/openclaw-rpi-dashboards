@@ -31,11 +31,6 @@
       After = [ "openclaw-gateway-token.service" ];
       Requires = [ "openclaw-gateway-token.service" ];
     };
-    Service = {
-      EnvironmentFile = "/var/lib/kiosk/.openclaw/gateway-token.env";
-      ExecStartPre = toString (pkgs.writeShellScript "ensure-openclaw-log-dir" ''
-        mkdir -p /tmp/openclaw
-      '');
-    };
+    Service.EnvironmentFile = "/var/lib/kiosk/.openclaw/gateway-token.env";
   };
 }

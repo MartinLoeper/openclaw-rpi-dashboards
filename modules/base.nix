@@ -57,6 +57,13 @@
 
   nix.settings.trusted-users = [ "nixos" ];
 
+  # Create /tmp/openclaw for gateway log files (owned by kiosk user).
+  # The openclaw-gateway service uses StandardOutput=append:/tmp/openclaw/...
+  # and systemd opens the file before ExecStartPre, so the dir must exist early.
+  systemd.tmpfiles.rules = [
+    "d /tmp/openclaw 0755 kiosk kiosk -"
+  ];
+
   security.rtkit.enable = true;
 
   security.sudo.wheelNeedsPassword = false;
