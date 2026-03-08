@@ -3,7 +3,8 @@
 ## Deployment
 
 - **Target device:** Raspberry Pi 5 reachable at `openclaw-rpi5.local` (mDNS)
-- **Deploy command:** `./scripts/deploy.sh`
+- **Deploy command:** `./scripts/deploy.sh [host] --specialisation kiosk`
+- **Default specialisation:** `kiosk` (always deploy with `--specialisation kiosk` unless told otherwise)
 - **SSH user:** `nixos`
 - **SSH key:** `id_ed25519_rpi5` in repo root (gitignored), set up via `./scripts/setup-ssh.sh`
 

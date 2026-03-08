@@ -1,5 +1,6 @@
-final: prev: {
-  openclaw-gateway = prev.openclaw-gateway.overrideAttrs (old: {
+final: prev:
+let
+  fixLongDep = drv: drv.overrideAttrs (old: {
     postPhases = (old.postPhases or []) ++ [ "fixMissingDeps" ];
     fixMissingDeps = ''
       # Work around missing 'long' dependency for @whiskeysockets/baileys in pnpm layout.
@@ -15,4 +16,13 @@ final: prev: {
       fi
     '';
   });
+in {
+  openclaw-gateway = fixLongDep prev.openclaw-gateway;
+
+  # The openclaw batteries package bundles its own reference to openclaw-gateway
+  # via prev (not final), so patching openclaw-gateway alone doesn't help.
+  # Override openclaw to swap in the patched gateway.
+  openclaw = prev.openclaw.override {
+    openclaw-gateway = final.openclaw-gateway;
+  };
 }
