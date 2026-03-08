@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# Deploy NixOS to the Raspberry Pi.
+#
+# Usage: ./scripts/deploy.sh [host] [nixos-rebuild args...]
+#
+# Set REMOTE_CACHE to a Hetzner ARM builder IP to fetch pre-built packages:
+#   REMOTE_CACHE=195.201.40.121 ./scripts/deploy.sh 192.168.0.64 --specialisation kiosk
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -6,6 +12,7 @@ TARGET_HOST="${1:-openclaw-rpi5.local}"
 TARGET_USER="nixos"
 FLAKE_ATTR="rpi5"
 KEY_FILE="${SCRIPT_DIR}/../id_ed25519_rpi5"
+REMOTE_CACHE="${REMOTE_CACHE:-}"
 
 if [ ! -f "${KEY_FILE}" ]; then
   echo "Error: SSH key not found at ${KEY_FILE}"
@@ -25,6 +32,14 @@ fi
 echo "Deploying NixOS to ${TARGET_USER}@${TARGET_HOST}..."
 echo "  Flake: .#${FLAKE_ATTR}"
 echo ""
+
+if [ -n "${REMOTE_CACHE}" ]; then
+  echo "  Remote cache: root@${REMOTE_CACHE}"
+  echo "Copying build closure from remote cache..."
+  REMOTE_PATH="$(ssh "root@${REMOTE_CACHE}" readlink -f openclaw-rpi-dashboards/result)"
+  nix copy --from "ssh://root@${REMOTE_CACHE}" "${REMOTE_PATH}" --no-check-sigs
+  echo "Done. Closure available locally."
+fi
 
 nixos-rebuild switch \
   --flake ".#${FLAKE_ATTR}" \
