@@ -6,7 +6,7 @@ ClawPi extends the base NixOS configuration with custom services. Options are de
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `services.clawpi.debug` | bool | `false` | Enable extra debugging tools (e.g. `speaker-test`) and verbose gateway logging (`OPENCLAW_VERBOSE=1`). Used by debug NixOS configurations (e.g. `rpi5-telegram-debug`). |
+| `services.clawpi.debug` | bool | `false` | Enable extra debugging tools (e.g. `speaker-test`) and verbose gateway logging (`OPENCLAW_LOG_LEVEL=debug`). Used by debug NixOS configurations (e.g. `rpi5-telegram-debug`). |
 
 ## Gateway Settings
 

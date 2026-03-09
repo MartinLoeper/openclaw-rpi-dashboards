@@ -122,7 +122,7 @@ in
     Service = {
       EnvironmentFile = "/var/lib/kiosk/.openclaw/gateway-token.env";
     } // lib.optionalAttrs debugCfg {
-      Environment = [ "OPENCLAW_VERBOSE=1" ];
+      Environment = [ "OPENCLAW_LOG_LEVEL=debug" ];
     } // lib.optionalAttrs audioCfg.enable {
       ExecStartPre = toString patchConfigScript;
     };

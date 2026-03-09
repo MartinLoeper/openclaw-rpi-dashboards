@@ -103,7 +103,7 @@ The gateway auto-migrates `routing.transcribeAudio` → `tools.media.audio.model
 
 ### Enable verbose logging
 
-Set `OPENCLAW_VERBOSE=1` in the gateway environment. In ClawPi, this is automatic when `services.clawpi.debug = true` (used by `rpi5-telegram-debug`).
+Set `OPENCLAW_LOG_LEVEL=debug` in the gateway environment. In ClawPi, this is automatic when `services.clawpi.debug = true` (used by `rpi5-telegram-debug`).
 
 Verbose logs show:
 - `audio-preflight: transcribing attachment ...`
