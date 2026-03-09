@@ -2,6 +2,12 @@
 
 ClawPi extends the base NixOS configuration with custom services. Options are defined under `services.clawpi`.
 
+## General
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `services.clawpi.debug` | bool | `false` | Enable extra debugging tools and verbose logging. Used by debug NixOS configurations (e.g. `rpi5-telegram-debug`). |
+
 ## Gateway Settings
 
 Shared gateway connection settings used by all ClawPi services.
@@ -55,6 +61,19 @@ Phone (Telegram) → Telegram Bot API → OpenClaw Gateway (on Pi, port 18789) �
 ```
 
 The gateway handles Telegram natively as a channel — no separate bridge process. It uses long polling by default (no inbound ports needed).
+
+## Audio Transcription
+
+Speech-to-text via whisper.cpp for Telegram voice messages and future voice input.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `services.clawpi.audio.enable` | bool | `false` | Enable audio transcription via whisper.cpp |
+| `services.clawpi.audio.model` | enum | `"base"` | Whisper model size: `"tiny"` (fast, lower accuracy), `"base"` (balanced), `"small"` (slow, best accuracy) |
+| `services.clawpi.audio.language` | string | `"auto"` | Spoken language code (e.g. `"en"`, `"de"`) or `"auto"` for auto-detect |
+| `services.clawpi.audio.timeoutSeconds` | int | `60` | Timeout in seconds for transcription |
+
+When enabled, installs `whisper-cpp`, `ffmpeg`, and `file` utilities. The gateway's `ExecStartPre` patches `openclaw.json` to configure the whisper-cli transcription model.
 
 ## Overlay Daemon
 

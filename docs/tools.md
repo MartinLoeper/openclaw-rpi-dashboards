@@ -56,7 +56,7 @@ Set the volume of the default audio sink.
 
 ### `audio_test_tone`
 
-Play a short test tone through the default audio sink to verify output is working. Requires `alsa-utils` (`services.clawpi.debug = true`).
+Play a short test tone through the default audio sink to verify output is working.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|

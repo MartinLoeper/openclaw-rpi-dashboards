@@ -4,7 +4,7 @@ let
 in
 {
   options.services.clawpi = {
-    debug = lib.mkEnableOption "extra debugging tools (speaker-test, etc.)";
+    debug = lib.mkEnableOption "extra debugging tools and verbose logging";
 
     gateway = {
       url = lib.mkOption {
