@@ -145,9 +145,10 @@ in
   };
 
   config = lib.mkMerge [
-    (lib.mkIf cfg.debug {
+    {
+      # alsa-utils provides speaker-test, used by the audio_test_tone plugin tool
       environment.systemPackages = [ pkgs.alsa-utils ];
-    })
+    }
     (lib.mkIf cfg.audio.enable {
       environment.systemPackages = [ pkgs.whisper-cpp pkgs.file pkgs.ffmpeg-headless ];
     })

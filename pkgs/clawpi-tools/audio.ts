@@ -1,5 +1,8 @@
 import { Type } from "@sinclair/typebox";
-import { run, text } from "./helpers";
+import { readFile, unlink } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
+import { run, text, SYSTEM_PATH } from "./helpers";
+import { execFile } from "node:child_process";
 
 export default function (api: any) {
   api.registerTool({
@@ -108,6 +111,117 @@ export default function (api: any) {
     async execute(_id: string, params: { sink_id: number }) {
       await run("wpctl", ["set-default", String(params.sink_id)]);
       return text(`Default sink set to ${params.sink_id}.`);
+    },
+  });
+
+  // ── Audio: get input volume ──────────────────────────────────────
+  api.registerTool({
+    name: "audio_get_input_volume",
+    description:
+      "Get the current volume level of the default audio source (microphone). " +
+      "Returns a value between 0.0 and 1.0 (plus mute status).",
+    parameters: Type.Object({}),
+    async execute() {
+      const { stdout } = await run("wpctl", [
+        "get-volume",
+        "@DEFAULT_AUDIO_SOURCE@",
+      ]);
+      return text(stdout.trim());
+    },
+  });
+
+  // ── Audio: set input volume ──────────────────────────────────────
+  api.registerTool({
+    name: "audio_set_input_volume",
+    description:
+      "Set the volume of the default audio source (microphone). " +
+      "Accepts a value between 0.0 (mute) and 1.0 (maximum).",
+    parameters: Type.Object({
+      level: Type.Number({
+        description: "Input volume level from 0.0 to 1.0",
+        minimum: 0,
+        maximum: 1,
+      }),
+    }),
+    async execute(_id: string, params: { level: number }) {
+      await run("wpctl", [
+        "set-volume",
+        "@DEFAULT_AUDIO_SOURCE@",
+        String(params.level),
+      ]);
+      const { stdout } = await run("wpctl", [
+        "get-volume",
+        "@DEFAULT_AUDIO_SOURCE@",
+      ]);
+      return text(`Input volume set. ${stdout.trim()}`);
+    },
+  });
+
+  // ── Audio: set default source ────────────────────────────────────
+  api.registerTool({
+    name: "audio_set_default_source",
+    description:
+      "Set the default audio input source (microphone) by its WirePlumber source ID. " +
+      "Use audio_status first to find available source IDs.",
+    parameters: Type.Object({
+      source_id: Type.Number({
+        description:
+          "WirePlumber source ID (from audio_status output, e.g. 46 for USB mic)",
+      }),
+    }),
+    async execute(_id: string, params: { source_id: number }) {
+      await run("wpctl", ["set-default", String(params.source_id)]);
+      return text(`Default source set to ${params.source_id}.`);
+    },
+  });
+
+  // ── Audio: record ────────────────────────────────────────────────
+  api.registerTool({
+    name: "audio_record",
+    description:
+      "Record audio from the default input source (microphone) for a specified " +
+      "number of seconds. Returns the recording as a base64-encoded WAV file. " +
+      "Useful for testing microphone input or capturing ambient audio.",
+    parameters: Type.Object({
+      seconds: Type.Number({
+        description: "Recording duration in seconds",
+        minimum: 1,
+        maximum: 30,
+      }),
+    }),
+    async execute(_id: string, params: { seconds: number }) {
+      const tmpFile = `/tmp/clawpi-record-${randomBytes(4).toString("hex")}.wav`;
+      try {
+        // pw-record doesn't have a duration flag — kill it after the timeout
+        await new Promise<void>((resolve, reject) => {
+          const child = execFile(
+            "pw-record",
+            ["--format", "s16", "--rate", "16000", "--channels", "1", tmpFile],
+            {
+              env: {
+                ...process.env,
+                PATH: SYSTEM_PATH,
+                XDG_RUNTIME_DIR: `/run/user/${process.getuid?.() ?? 1000}`,
+              },
+            },
+            (err) => {
+              // SIGTERM causes an error we can ignore
+              if (err && (err as any).signal !== "SIGTERM") reject(err);
+              else resolve();
+            },
+          );
+          setTimeout(() => child.kill("SIGTERM"), params.seconds * 1000);
+        });
+        const data = await readFile(tmpFile);
+        return {
+          content: [
+            { type: "text" as const, text: `Recorded ${params.seconds}s of audio (WAV, 16kHz mono, ${data.length} bytes).` },
+            { type: "resource" as const, resource: { uri: `data:audio/wav;base64,${data.toString("base64")}`, mimeType: "audio/wav", text: data.toString("base64") } },
+          ],
+        };
+      } finally {
+        await unlink(tmpFile).catch(() => {});
+      }
     },
   });
 }

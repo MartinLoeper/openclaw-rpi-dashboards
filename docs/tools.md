@@ -13,6 +13,10 @@ ClawPi ships an OpenClaw plugin (`clawpi-tools`) that gives the agent hardware c
 | `audio_set_volume` | Audio | `level` (0.0–1.0) | Set volume of default sink |
 | `audio_test_tone` | Audio | `frequency?`, `duration?` | Play test sine wave (requires debug mode) |
 | `audio_set_default_sink` | Audio | `sink_id` | Switch default audio output by sink ID |
+| `audio_get_input_volume` | Audio | — | Get current volume of default source (mic) |
+| `audio_set_input_volume` | Audio | `level` (0.0–1.0) | Set volume of default source (mic) |
+| `audio_set_default_source` | Audio | `source_id` | Switch default audio input by source ID |
+| `audio_record` | Audio | `seconds` (1–30) | Record audio from mic, returns WAV |
 | `screenshot_display` | Screenshot | — | Full compositor screenshot (grim) |
 | `screenshot_browser` | Screenshot | `format?`, `quality?` | Browser viewport screenshot (CDP) |
 
@@ -70,6 +74,48 @@ Switch the default audio output to a different sink. Use `audio_status` first to
 | `sink_id` | number | yes | WirePlumber sink ID (e.g. 54 for USB speaker, 73 for HDMI) |
 
 **Returns:** Confirmation message.
+
+### `audio_get_input_volume`
+
+Get the current volume level of the default audio source (microphone).
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| *(none)* | | |
+
+**Returns:** Volume between 0.0 and 1.0 plus mute status.
+
+### `audio_set_input_volume`
+
+Set the volume of the default audio source (microphone).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `level` | number | yes | Input volume level from 0.0 (mute) to 1.0 (maximum) |
+
+**Returns:** Confirmation with the new volume readback.
+
+### `audio_set_default_source`
+
+Switch the default audio input to a different source. Use `audio_status` first to find available source IDs.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `source_id` | number | yes | WirePlumber source ID (e.g. 46 for USB mic) |
+
+**Returns:** Confirmation message.
+
+### `audio_record`
+
+Record audio from the default input source (microphone) for a specified duration. Returns the recording as a WAV file (16kHz mono, 16-bit). Useful for testing microphone input or capturing ambient audio.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `seconds` | number | yes | Recording duration in seconds (1–30) |
+
+**Returns:** Text summary and base64-encoded WAV audio file.
+
+**How it works:** Runs `pw-record` (PipeWire) with a SIGTERM after the specified duration.
 
 ## Screenshots
 
