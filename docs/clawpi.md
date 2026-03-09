@@ -35,11 +35,13 @@ The canvas is a writable directory where the agent creates static web files (HTM
 |--------|------|---------|-------------|
 | `services.clawpi.canvas.tmpfs` | bool | `true` | `true` → workspace at `/tmp/clawpi-canvas` (volatile, cleared on reboot). `false` → workspace at `/var/lib/kiosk/.openclaw/canvas` (persistent, survives reboots). |
 
-The canvas directory is created automatically at startup by the Go backend. Both the `clawpi` and `openclaw-gateway` services receive the `CLAWPI_CANVAS_DIR` environment variable so the agent tools can locate it.
+The canvas directory is created automatically at startup by the Go backend. Both the `clawpi` and `openclaw-gateway` services receive `CLAWPI_CANVAS_DIR` and `CLAWPI_CANVAS_ARCHIVE_DIR` environment variables.
+
+The **archive directory** (`/var/lib/kiosk/.openclaw/canvas-archive`) is always persistent, regardless of the tmpfs setting. When `canvas_reset` is called, the current canvas contents are moved into a named subdirectory in the archive rather than deleted.
 
 **When to use persistent mode:** If the agent builds dashboards or UIs that should survive reboots (e.g. a permanent status display), set `canvas.tmpfs = false`. The workspace then lives inside the kiosk user's home directory alongside the OpenClaw config.
 
-**When to use tmpfs (default):** For ephemeral content like one-off visualizations, debugging output, or experiments. The workspace is automatically cleaned on every reboot.
+**When to use tmpfs (default):** For ephemeral content like one-off visualizations, debugging output, or experiments. The workspace is automatically cleaned on every reboot. Archived projects are still preserved.
 
 ## Telegram Channel
 

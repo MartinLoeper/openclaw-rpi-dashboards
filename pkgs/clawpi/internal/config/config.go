@@ -7,11 +7,12 @@ import (
 )
 
 type Config struct {
-	GatewayURL string
-	Token      string
-	WebAddr    string
-	CanvasDir  string
-	Debug      bool
+	GatewayURL      string
+	Token           string
+	WebAddr         string
+	CanvasDir       string
+	CanvasArchiveDir string
+	Debug           bool
 }
 
 func Load() (*Config, error) {
@@ -57,13 +58,19 @@ func Load() (*Config, error) {
 		canvasDir = "/tmp/clawpi-canvas"
 	}
 
+	canvasArchiveDir := os.Getenv("CLAWPI_CANVAS_ARCHIVE_DIR")
+	if canvasArchiveDir == "" {
+		canvasArchiveDir = "/var/lib/kiosk/.openclaw/canvas-archive"
+	}
+
 	debug := os.Getenv("CLAWPI_DEBUG") == "1" || os.Getenv("CLAWPI_DEBUG") == "true"
 
 	return &Config{
-		GatewayURL: gatewayURL,
-		Token:      token,
-		WebAddr:    webAddr,
-		CanvasDir:  canvasDir,
-		Debug:      debug,
+		GatewayURL:      gatewayURL,
+		Token:           token,
+		WebAddr:         webAddr,
+		CanvasDir:       canvasDir,
+		CanvasArchiveDir: canvasArchiveDir,
+		Debug:           debug,
 	}, nil
 }

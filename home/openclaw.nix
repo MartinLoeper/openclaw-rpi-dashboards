@@ -6,6 +6,7 @@ let
   debugCfg = osConfig.services.clawpi.debug;
   canvasCfg = osConfig.services.clawpi.canvas;
   canvasDir = if canvasCfg.tmpfs then "/tmp/clawpi-canvas" else "/var/lib/kiosk/.openclaw/canvas";
+  canvasArchiveDir = "/var/lib/kiosk/.openclaw/canvas-archive";
   elevenlabsCfg = osConfig.services.clawpi.elevenlabs;
   tgCfg = osConfig.services.clawpi.telegram;
 
@@ -196,7 +197,7 @@ in
     Service = {
       EnvironmentFile = "/var/lib/kiosk/.openclaw/gateway-token.env";
       Environment =
-        [ "CLAWPI_CANVAS_DIR=${canvasDir}" ]
+        [ "CLAWPI_CANVAS_DIR=${canvasDir}" "CLAWPI_CANVAS_ARCHIVE_DIR=${canvasArchiveDir}" ]
         ++ lib.optional debugCfg "OPENCLAW_LOG_LEVEL=debug"
         ++ lib.optionals elevenlabsCfg.enable [
           "CLAWPI_ELEVENLABS_API_KEY_FILE=${toString elevenlabsCfg.apiKeyFile}"

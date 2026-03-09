@@ -83,16 +83,26 @@ Controlled by the `services.clawpi.canvas.tmpfs` NixOS option:
 
 The directory is created automatically by the Go backend at startup via `os.MkdirAll`. Both the `clawpi` service and `openclaw-gateway` service receive the path via the `CLAWPI_CANVAS_DIR` environment variable.
 
+### Archive
+
+When `canvas_reset` is called, the current canvas contents are moved into a timestamped subdirectory under the **archive directory** (`/var/lib/kiosk/.openclaw/canvas-archive`). The archive is always persistent — it survives reboots regardless of the `canvas.tmpfs` setting.
+
+The archive subdirectory is named with a short descriptive slug (e.g. `weather-dashboard`, `photo-gallery`). The agent chooses the name based on the project content. Names use lowercase, dashes, no spaces.
+
+Environment variable: `CLAWPI_CANVAS_ARCHIVE_DIR` (default: `/var/lib/kiosk/.openclaw/canvas-archive`).
+
 ### Agent Tools
 
-Four tools give the agent full control over the canvas lifecycle:
+Six tools give the agent full control over the canvas lifecycle:
 
 | Tool | Description |
 |------|-------------|
 | `canvas_folder` | Returns the workspace path and usage instructions (no side effects) |
 | `canvas_open` | Navigates kiosk Chromium to `http://localhost:3100/canvas/{path}` via CDP |
 | `canvas_close` | Navigates back to the landing page (`http://localhost:3100`) |
-| `canvas_reset` | Removes all files in the workspace directory |
+| `canvas_reset` | Archives current canvas contents, then clears the workspace |
+| `canvas_list_archive` | Lists all archived projects in the archive directory |
+| `canvas_restore` | Archives the current canvas (if non-empty), then restores a project from the archive |
 
 ### Agent Workflow
 
@@ -102,12 +112,24 @@ Four tools give the agent full control over the canvas lifecycle:
 4. User sees the content on the kiosk display
 5. Agent can update files and call `canvas_open` again to reload
 6. Agent calls `canvas_close` to return to the home screen
-7. Agent calls `canvas_reset` to clear the workspace and start fresh
+7. When starting a **new** project, agent calls `canvas_reset` to archive and clear
+
+#### Starting a new task
+
+When the user asks to build something new, the agent should:
+- If the canvas already has content, **ask the user** whether they want to modify the existing project or start a new one — do not assume.
+- If it is clear that a completely new project starts, call `canvas_reset` (which archives the current content first).
+- If the user wants to keep both the old and new project, archive first, then start fresh.
+
+#### Restoring an archived project
+
+1. Agent calls `canvas_list_archive` to show available projects
+2. Agent calls `canvas_restore` with the project name to swap it back in
 
 ### Implementation Details
 
-- **Go backend** (`pkgs/clawpi/internal/web/server.go`): Mounts `http.StripPrefix("/canvas/", http.FileServer(http.Dir(canvasDir)))` on the existing mux
-- **Config** (`pkgs/clawpi/internal/config/config.go`): Reads `CLAWPI_CANVAS_DIR` env var (default: `/tmp/clawpi-canvas`)
-- **NixOS option** (`modules/clawpi.nix`): `services.clawpi.canvas.tmpfs` controls storage mode
-- **Environment wiring** (`home/clawpi.nix`, `home/openclaw.nix`): Both services get `CLAWPI_CANVAS_DIR`
-- **Agent tools** (`pkgs/clawpi-tools/canvas.ts`): CDP navigation + filesystem operations
+- **Go backend** (`pkgs/clawpi/internal/web/server.go`): Mounts `http.StripPrefix("/canvas/", http.FileServer(http.Dir(canvasDir)))` on the existing mux. Creates both canvas and archive directories at startup.
+- **Config** (`pkgs/clawpi/internal/config/config.go`): Reads `CLAWPI_CANVAS_DIR` and `CLAWPI_CANVAS_ARCHIVE_DIR` env vars
+- **NixOS option** (`modules/clawpi.nix`): `services.clawpi.canvas.tmpfs` controls canvas storage mode. Archive is always persistent at `/var/lib/kiosk/.openclaw/canvas-archive`.
+- **Environment wiring** (`home/clawpi.nix`, `home/openclaw.nix`): Both services get `CLAWPI_CANVAS_DIR` and `CLAWPI_CANVAS_ARCHIVE_DIR`
+- **Agent tools** (`pkgs/clawpi-tools/canvas.ts`): CDP navigation + filesystem operations + archive management
