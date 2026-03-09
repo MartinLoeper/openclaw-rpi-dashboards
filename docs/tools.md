@@ -16,7 +16,8 @@ ClawPi ships an OpenClaw plugin (`clawpi-tools`) that gives the agent hardware c
 | `audio_get_input_volume` | Audio | — | Get current volume of default source (mic) |
 | `audio_set_input_volume` | Audio | `level` (0.0–1.0) | Set volume of default source (mic) |
 | `audio_set_default_source` | Audio | `source_id` | Switch default audio input by source ID |
-| `audio_record` | Audio | `seconds` (1–30) | Record audio from mic, returns WAV |
+| `audio_record` | Audio | `seconds?` (1–30) | Record audio from mic, returns WAV |
+| `audio_transcribe` | Audio | `seconds?`, `language?` | Record and transcribe speech via whisper.cpp |
 | `screenshot_display` | Screenshot | — | Full compositor screenshot (grim) |
 | `screenshot_browser` | Screenshot | `format?`, `quality?` | Browser viewport screenshot (CDP) |
 
@@ -116,6 +117,19 @@ Record audio from the default input source (microphone) for a specified duration
 **Returns:** Text summary and base64-encoded WAV audio file.
 
 **How it works:** Runs `pw-record` (PipeWire) with a SIGTERM after the specified duration.
+
+### `audio_transcribe`
+
+Record audio from the microphone and transcribe it locally using whisper.cpp. Combines `pw-record` + `whisper-cli` in a single tool call. Requires `services.clawpi.audio.enable = true`.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `seconds` | number | no | 5 | Recording duration in seconds (1–60) |
+| `language` | string | no | (from config) | Language code (e.g. `"en"`, `"de"`) or `"auto"` |
+
+**Returns:** Transcription text, or a "no speech detected" message.
+
+**How it works:** Records via `pw-record`, then runs `whisper-cli` with the model and language from the gateway's `openclaw.json` config. The whisper model path is read dynamically from the config so it stays in sync with the Nix configuration.
 
 ## Screenshots
 

@@ -1,8 +1,29 @@
 import { Type } from "@sinclair/typebox";
 import { readFile, unlink } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { run, text, SYSTEM_PATH } from "./helpers";
 import { execFile } from "node:child_process";
+
+// Read whisper config from the gateway's openclaw.json at import time.
+// Returns { command, model, language } or null if whisper is not configured.
+function getWhisperConfig(): { command: string; model: string; language: string } | null {
+  try {
+    const configPath = join(homedir(), ".openclaw", "openclaw.json");
+    // Use require for sync read (jiti supports it)
+    const fs = require("node:fs");
+    const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    const media = config?.tools?.media?.audio;
+    if (!media?.enabled || !media?.models?.[0]) return null;
+    const m = media.models[0];
+    const modelArg = m.args?.[m.args.indexOf("-m") + 1];
+    const langArg = m.args?.[m.args.indexOf("-l") + 1] ?? "auto";
+    return { command: m.command, model: modelArg, language: langArg };
+  } catch {
+    return null;
+  }
+}
 
 export default function (api: any) {
   api.registerTool({
@@ -226,6 +247,101 @@ export default function (api: any) {
             { type: "text" as const, text: `Recorded ${duration}s of audio (WAV, 16kHz mono, ${data.length} bytes).` },
           ],
         };
+      } finally {
+        await unlink(tmpFile).catch(() => {});
+      }
+    },
+  });
+
+  // ── Audio: transcribe ──────────────────────────────────────────────
+  api.registerTool({
+    name: "audio_transcribe",
+    description:
+      "Record audio from the microphone and transcribe it locally using whisper.cpp. " +
+      "Returns the transcription text. Useful for listening to what the user says, " +
+      "capturing ambient speech, or taking voice notes. " +
+      "Before recording, ask the user how many seconds to record " +
+      "unless they already specified a duration. Defaults to 5 seconds. " +
+      "Use auto language detection by default — only set a specific language " +
+      "if the user explicitly asks to record in a particular language. " +
+      "Requires services.clawpi.audio.enable = true.",
+    parameters: Type.Object({
+      seconds: Type.Optional(
+        Type.Number({
+          description: "Recording duration in seconds (default: 5)",
+          minimum: 1,
+          maximum: 60,
+        }),
+      ),
+      language: Type.Optional(
+        Type.String({
+          description:
+            'Language code for transcription (e.g. "en", "de"). ' +
+            "Defaults to the configured language (usually auto-detect).",
+        }),
+      ),
+    }),
+    async execute(
+      _id: string,
+      params: { seconds?: number; language?: string },
+    ) {
+      const whisper = getWhisperConfig();
+      if (!whisper) {
+        return text(
+          "Error: whisper.cpp is not configured. Enable it with services.clawpi.audio.enable = true.",
+        );
+      }
+
+      const duration = params.seconds ?? 5;
+      const lang = params.language ?? whisper.language;
+      const tmpFile = `/tmp/clawpi-transcribe-${randomBytes(4).toString("hex")}.wav`;
+
+      try {
+        // Step 1: Record audio
+        await new Promise<void>((resolve, reject) => {
+          let killed = false;
+          const child = execFile(
+            "pw-record",
+            ["--format", "s16", "--rate", "16000", "--channels", "1", tmpFile],
+            {
+              env: {
+                ...process.env,
+                PATH: SYSTEM_PATH,
+                XDG_RUNTIME_DIR: `/run/user/${process.getuid?.() ?? 1000}`,
+              },
+            },
+            (err) => {
+              if (err && !killed) reject(err);
+              else resolve();
+            },
+          );
+          setTimeout(() => {
+            killed = true;
+            child.kill("SIGTERM");
+          }, duration * 1000);
+        });
+
+        // Step 2: Transcribe with whisper-cli
+        const { stdout } = await run(whisper.command, [
+          "-m", whisper.model,
+          "-l", lang,
+          "-np",
+          "--no-gpu",
+          "-f", tmpFile,
+        ]);
+
+        // whisper-cli outputs timestamps + text, extract just the text
+        const lines = stdout.trim().split("\n");
+        const transcript = lines
+          .map((line: string) => line.replace(/^\[.*?\]\s*/, "").trim())
+          .filter(Boolean)
+          .join(" ");
+
+        return text(
+          transcript
+            ? `Transcription (${duration}s, lang=${lang}):\n\n${transcript}`
+            : `No speech detected in ${duration}s recording.`,
+        );
       } finally {
         await unlink(tmpFile).catch(() => {});
       }
