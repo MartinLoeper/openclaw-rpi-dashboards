@@ -39,6 +39,10 @@ Highlight in the README that we use NixOS for fully reproducible deployments —
 
 This is a real differentiator vs. Raspberry Pi projects that rely on manual `apt install` and can't reproduce their setup.
 
+## Project Name
+
+Find a proper name for the project. "openclaw-rpi-dashboards" is a working title — it undersells the vision and ties it to a single use case. The name should convey that this is a general-purpose AI-powered smart display platform, not just a dashboard viewer. Ideally short, memorable, and available as a GitHub org / npm scope / domain.
+
 ## Speech Bubble Overlay via Eww
 
 Use [Eww](https://github.com/elkowar/eww) to overlay brief agent messages directly on screen in a speech bubble style — a lightweight alternative to TTS that costs fewer tokens. The agent writes short, direct status updates or responses to a file/socket, and an Eww widget renders them as a floating bubble on top of the kiosk browser. Cheaper and faster than generating audio, and works well on the small 10" display where brevity is key.
