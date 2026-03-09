@@ -29,8 +29,10 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
 
 ## Nix Build Rules
 
+**CRITICAL: NEVER pipe build output through `tail`, `head`, or any filter.** These swallow build progress and make long builds appear stuck. Always let output stream directly.
+
 - **Always** pass `--show-trace -L` (or `--print-build-logs`) to `nix build` commands so build progress is visible.
-- **Never** pipe build output through `tail`, `head`, or other filters that buffer output — this hides progress and makes long builds appear stuck.
+- **Never** use `| tail`, `| head`, `2>&1 | tail`, or any output filtering on build commands. This is the number one cause of builds appearing to hang.
 - When running builds in background tasks, the full output must stream to the task output file unfiltered.
 
 ## Architecture

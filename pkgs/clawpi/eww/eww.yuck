@@ -1,0 +1,37 @@
+;; ClawPi status overlay widgets
+;; State variables (will be updated by the Go daemon via `eww update` in phase 2)
+(defvar clawpi_state "idle")
+(defvar clawpi_tool_name "")
+(defvar clawpi_message "")
+
+(defwidget status-indicator []
+  (box :class "status-container status-${clawpi_state}"
+       :visible {clawpi_state != "idle"}
+       :halign "center"
+       :valign "end"
+       :space-evenly false
+    (label :class "status-icon"
+           :text {clawpi_state == "thinking" ? "🧠" :
+                  clawpi_state == "tool_use" ? "🔧" :
+                  clawpi_state == "responding" ? "💬" :
+                  clawpi_state == "error" ? "⚠" :
+                  clawpi_state == "disconnected" ? "🔌" : ""})
+    (label :class "status-text"
+           :text {clawpi_state == "thinking" ? "Thinking..." :
+                  clawpi_state == "tool_use" ? "Using: ${clawpi_tool_name}" :
+                  clawpi_state == "responding" ? "Responding..." :
+                  clawpi_state == "error" ? clawpi_message :
+                  clawpi_state == "disconnected" ? "Reconnecting..." : ""})))
+
+(defwindow status-overlay
+  :monitor 0
+  :geometry (geometry :x "0%"
+                      :y "-20px"
+                      :width "300px"
+                      :height "60px"
+                      :anchor "bottom center")
+  :stacking "overlay"
+  :exclusive false
+  :focusable false
+  :namespace "clawpi-overlay"
+  (status-indicator))

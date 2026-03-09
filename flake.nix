@@ -29,6 +29,7 @@
           nixpkgs.overlays = [
             nix-openclaw.overlays.default
             (import ./overlays/openclaw-gateway-fix.nix)
+            (import ./overlays/clawpi.nix)
           ];
         }
         home-manager.nixosModules.home-manager
@@ -39,6 +40,7 @@
             imports = [
               nix-openclaw.homeManagerModules.openclaw
               ./home/openclaw.nix
+              ./home/clawpi.nix
             ];
             home.stateVersion = "25.05";
           };

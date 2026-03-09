@@ -1,0 +1,36 @@
+// ClawPi status overlay styles
+
+.status-container {
+  background-color: rgba(0, 0, 0, 0.75);
+  border-radius: 12px;
+  padding: 8px 20px;
+  color: white;
+  font-size: 18px;
+  font-family: sans-serif;
+}
+
+.status-thinking {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.status-disconnected {
+  opacity: 0.6;
+}
+
+.status-error {
+  background-color: rgba(200, 0, 0, 0.8);
+}
+
+.status-icon {
+  font-size: 24px;
+  margin-right: 8px;
+}
+
+.status-text {
+  font-weight: 500;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1.0; }
+}

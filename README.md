@@ -126,6 +126,15 @@ sudo /run/current-system/bin/switch-to-configuration switch
 
 See [docs/canvas.md](docs/canvas.md) for the full design rationale.
 
+## ClawPi Overlay Daemon
+
+A custom Go service (`clawpi`) connects to the OpenClaw gateway WebSocket as a `gateway-client` and listens for agent lifecycle events (thinking, tool use, responses). It drives [Eww](https://github.com/elkowar/eww) overlays rendered as Wayland layer-shell windows on top of the kiosk browser — giving visual feedback like "Thinking..." or "Using: browser" without interrupting the displayed content.
+
+- **Source:** [`pkgs/clawpi/`](pkgs/clawpi/) (Go + Eww config)
+- **Service:** `clawpi.service` (systemd user service, kiosk user)
+- **Starts with:** `graphical-session.target` (only runs in kiosk mode)
+- **Reconnects automatically** if the gateway restarts
+
 ## PinchChat (Web UI)
 
 [PinchChat](https://github.com/MarlBurroW/pinchchat) provides a webchat interface for interacting with the OpenClaw gateway from your workstation. It connects via WebSocket through an SSH tunnel.
