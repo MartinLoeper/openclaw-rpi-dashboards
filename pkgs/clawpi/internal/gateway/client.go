@@ -168,12 +168,22 @@ func (c *Client) handleEvent(msg *GatewayMessage, raw []byte) {
 	// Log all non-trivial events
 	logMessage(msg, raw)
 
-	if msg.Event != "agent" || len(msg.Data) == 0 {
+	if msg.Event != "agent" {
+		return
+	}
+
+	// The gateway may deliver agent event data in either the "data" or
+	// "payload" field depending on the protocol version.  Try both.
+	eventData := msg.Data
+	if len(eventData) == 0 {
+		eventData = msg.Payload
+	}
+	if len(eventData) == 0 {
 		return
 	}
 
 	var agentEvent AgentEventData
-	if err := json.Unmarshal(msg.Data, &agentEvent); err != nil {
+	if err := json.Unmarshal(eventData, &agentEvent); err != nil {
 		return
 	}
 
