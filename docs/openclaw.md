@@ -53,6 +53,18 @@ Defaults to `openclaw-rpi5.local`. Pass an IP to override:
 
 The script prints the token and a ready-to-use dashboard URL with the token parameter.
 
+## Agent Auth (API Key)
+
+The gateway requires an Anthropic API key to run agents. Configure it with:
+
+```sh
+./scripts/setup-agent-auth.sh [host]
+```
+
+This prompts for an API key (obtain one via `claude setup-token` or from [console.anthropic.com](https://console.anthropic.com)), writes it to the agent auth profile on the Pi, and restarts the gateway.
+
+The auth profile is stored at `~/.openclaw/agents/main/agent/auth-profiles.json`.
+
 ## Kiosk Connection
 
 The kiosk specialisation runs Cage + Chromium pointing at `http://localhost:18789`. The Cage service waits for PipeWire before launching Chromium so that audio is available.
