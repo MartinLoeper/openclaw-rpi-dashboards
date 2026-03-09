@@ -51,3 +51,13 @@ Teach the agent to:
 - **Hotword detection (research needed):** Would be awesome to have an always-on wake word (e.g. "Hey OpenClaw") so the user can just speak without pressing a button. Needs research — running Whisper continuously on an RPi 5 may be too heavy. Alternatives: lightweight hotword engines like openWakeWord, Porcupine, or Snowboy for the trigger, then hand off to Whisper for the actual transcription.
 - **TTS (lower priority):** Agent responses can be displayed on screen (via Eww overlay or browser). Audio output via PipeWire is available for when TTS is added later.
 - Tools: `pw-record`/`pw-play`, whisper.cpp, browser Web Audio APIs.
+
+## File Transfer Channel
+
+Build a small app that opens a channel on the local network between the Pi and the user's laptop, so the agent can easily send files to the user. Use cases:
+
+- "Screenshot that dashboard and send it to me" — agent takes a browser screenshot via CDP and transfers it to the user's machine
+- "Record the screen for 30 seconds" — agent captures a screen recording and pushes it over
+- "Send me that error log" — agent grabs a file and transfers it
+
+The user can then use these artifacts for social media posts, incident reports in Teams/Slack, documentation, etc. Could be a simple HTTP file server on the Pi with mDNS discovery, or a WebSocket-based drop channel that pushes files to a lightweight client running on the laptop.
