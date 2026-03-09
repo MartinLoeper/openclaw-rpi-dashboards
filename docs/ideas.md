@@ -60,4 +60,4 @@ Build a small app that opens a channel on the local network between the Pi and t
 - "Record the screen for 30 seconds" — agent captures a screen recording and pushes it over
 - "Send me that error log" — agent grabs a file and transfers it
 
-The user can then use these artifacts for social media posts, incident reports in Teams/Slack, documentation, etc. Could be a simple HTTP file server on the Pi with mDNS discovery, or a WebSocket-based drop channel that pushes files to a lightweight client running on the laptop.
+The user can then use these artifacts for social media posts, incident reports in Teams/Slack, documentation, etc. **Simplest approach:** Spawn an SFTP server on the user's laptop pointing at a temp directory. SFTP is installed on most modern Linux distros out of the box, and tools like yazi have excellent SFTP integration for browsing transferred files. The agent on the Pi just `sftp put`s files to the laptop — no custom app needed.
