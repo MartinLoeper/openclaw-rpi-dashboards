@@ -48,5 +48,6 @@ Teach the agent to:
 **Speech-to-text is the top priority.** The user is far more comfortable speaking aloud than typing, and can easily read agent responses on the display — so TTS is nice-to-have but not critical.
 
 - **STT (high priority):** Run Whisper (or whisper.cpp for ARM efficiency) locally on the Pi to transcribe user speech into text for the agent. Needs a USB microphone and a wake-word or push-to-talk trigger.
+- **Hotword detection (research needed):** Would be awesome to have an always-on wake word (e.g. "Hey OpenClaw") so the user can just speak without pressing a button. Needs research — running Whisper continuously on an RPi 5 may be too heavy. Alternatives: lightweight hotword engines like openWakeWord, Porcupine, or Snowboy for the trigger, then hand off to Whisper for the actual transcription.
 - **TTS (lower priority):** Agent responses can be displayed on screen (via Eww overlay or browser). Audio output via PipeWire is available for when TTS is added later.
 - Tools: `pw-record`/`pw-play`, whisper.cpp, browser Web Audio APIs.
