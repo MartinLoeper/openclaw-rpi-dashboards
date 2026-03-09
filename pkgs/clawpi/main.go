@@ -21,6 +21,14 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
+	// Start web server early so the landing page is available
+	// even if eww or gateway setup fails
+	go func() {
+		if err := web.Serve(cfg.WebAddr); err != nil {
+			log.Fatalf("web server: %v", err)
+		}
+	}()
+
 	ewwConfigDir := os.Getenv("CLAWPI_EWW_CONFIG")
 	if ewwConfigDir == "" {
 		log.Fatal("CLAWPI_EWW_CONFIG not set")
@@ -28,7 +36,7 @@ func main() {
 
 	ctrl := eww.NewController(ewwConfigDir)
 	if err := ctrl.StartDaemon(); err != nil {
-		log.Fatalf("eww: %v", err)
+		log.Printf("eww: %v (overlays disabled)", err)
 	}
 
 	ctrl.SetState(eww.StateDisconnected)
@@ -58,13 +66,6 @@ func main() {
 			ctrl.SetState(eww.StateDisconnected)
 		}
 	}
-
-	// Start web server
-	go func() {
-		if err := web.Serve(cfg.WebAddr); err != nil {
-			log.Fatalf("web server: %v", err)
-		}
-	}()
 
 	// Graceful shutdown
 	sigCh := make(chan os.Signal, 1)
