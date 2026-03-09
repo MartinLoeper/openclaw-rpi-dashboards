@@ -12,7 +12,7 @@ const SYSTEM_PATH = [
   "/run/wrappers/bin",
 ].filter(Boolean).join(":");
 
-// Run a command as the kiosk user with the correct runtime dir and PATH.
+// Run a command with the correct runtime dir and PATH.
 async function run(
   cmd: string,
   args: string[],
@@ -28,12 +28,6 @@ async function run(
 
 function text(t: string) {
   return { content: [{ type: "text" as const, text: t }] };
-}
-
-// Extract params from execute() arguments — the gateway passes (id, params)
-// during agent runs but the HTTP tools/invoke API may pass (params) directly.
-function getParams<T>(args: any[]): T {
-  return args.length > 1 ? args[1] : args[0];
 }
 
 export default function (api: any) {
@@ -79,8 +73,7 @@ export default function (api: any) {
         maximum: 1,
       }),
     }),
-    async execute(...args: any[]) {
-      const params = getParams<{ level: number }>(args);
+    async execute(_id: string, params: { level: number }) {
       await run("wpctl", [
         "set-volume",
         "@DEFAULT_AUDIO_SINK@",
@@ -116,8 +109,10 @@ export default function (api: any) {
         }),
       ),
     }),
-    async execute(...args: any[]) {
-      const params = getParams<{ frequency?: number; duration?: number }>(args);
+    async execute(
+      _id: string,
+      params: { frequency?: number; duration?: number },
+    ) {
       const freq = String(params.frequency ?? 440);
       const dur = String(params.duration ?? 3);
       await run("speaker-test", [
@@ -150,8 +145,7 @@ export default function (api: any) {
           "WirePlumber sink ID (from audio_status output, e.g. 54 for USB speaker, 73 for HDMI)",
       }),
     }),
-    async execute(...args: any[]) {
-      const params = getParams<{ sink_id: number }>(args);
+    async execute(_id: string, params: { sink_id: number }) {
       await run("wpctl", ["set-default", String(params.sink_id)]);
       return text(`Default sink set to ${params.sink_id}.`);
     },
