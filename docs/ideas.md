@@ -33,6 +33,10 @@ Position the project as a truly intelligent home assistant: not a canned voice s
 
 Use [Eww](https://github.com/elkowar/eww) to overlay brief agent messages directly on screen in a speech bubble style — a lightweight alternative to TTS that costs fewer tokens. The agent writes short, direct status updates or responses to a file/socket, and an Eww widget renders them as a floating bubble on top of the kiosk browser. Cheaper and faster than generating audio, and works well on the small 10" display where brevity is key.
 
+## Visual Awareness ("What am I seeing?")
+
+Teach the agent to respond to questions like "what is that?" or "what am I seeing?" by taking a screenshot of the current open tab via CDP and describing what's on screen. This makes the agent visually aware of the display — it can explain dashboards, interpret charts, read error messages, or describe any content shown on the kiosk.
+
 ## Real Fullscreen in Chrome
 
 The current `--kiosk` and `--start-fullscreen` flags don't fully eliminate window decorations inside Cage. Investigate proper fullscreen — possibly via Cage `-d` flag (already added), Chromium `--app` mode, or launching Chromium without a window manager entirely. Goal: zero chrome, zero borders, just content edge-to-edge.
