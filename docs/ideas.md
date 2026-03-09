@@ -29,6 +29,10 @@ Add a catchy tagline to the README that sells the vision, something like:
 
 Position the project as a truly intelligent home assistant: not a canned voice skill platform, but a real AI agent with eyes (display + browser), ears (mic), voice (speakers), and hands (GPIO/peripherals) — running on your own hardware with full control.
 
+## Real Fullscreen in Chrome
+
+The current `--kiosk` and `--start-fullscreen` flags don't fully eliminate window decorations inside Cage. Investigate proper fullscreen — possibly via Cage `-d` flag (already added), Chromium `--app` mode, or launching Chromium without a window manager entirely. Goal: zero chrome, zero borders, just content edge-to-edge.
+
 ## Dashboard & Diagram Design
 
 Teach the agent to:
