@@ -64,6 +64,29 @@ The gateway itself — including the AI model orchestration, session management,
 
 **NixOS integration:** Expose as a `services.clawpi.mode` option (`"gateway"` | `"node"`) with a `services.clawpi.remoteGateway.url` for node mode. In gateway mode the config stays as-is. In node mode, skip the local gateway service and point the node agent at the remote URL.
 
+## Local LLM Fallback (Offline Mode)
+
+Support local LLM providers on the home network as a fallback when the internet is unavailable or as a privacy-first default. This would enable "offline" operation where no cloud inference service is needed.
+
+**How it could work:**
+- OpenClaw supports configurable model providers. Add a local provider pointing at an OpenAI-compatible API (e.g. Ollama, llama.cpp server, vLLM, LocalAI) running on a machine on the local network (home server, NAS, desktop GPU).
+- Configure a provider chain: try Anthropic first, fall back to local if the API is unreachable or rate-limited.
+- For fully offline use, set the local provider as the only provider — no internet dependency at all.
+
+**Candidate local inference servers:**
+- **Ollama** — easiest setup, supports many models, OpenAI-compatible API
+- **llama.cpp server** — lightweight, runs on CPU or GPU, good for ARM (could even run small models on the Pi itself)
+- **vLLM** — high-throughput GPU inference, good for a dedicated home server with a GPU
+- **LocalAI** — drop-in OpenAI API replacement, supports multiple model backends
+
+**Practical considerations:**
+- The Pi 5 itself can run tiny models (e.g. Phi-3 mini, TinyLlama) via llama.cpp but quality will be limited. Better to offload to a more powerful machine on the LAN.
+- Pairs well with **Node Mode** — the gateway runs on the beefy server with the GPU, the Pi is just a thin display terminal.
+- TTS and STT already run locally (whisper.cpp, KittenTTS) — local LLM would complete the fully-offline stack.
+- Network discovery: the local inference server could be discovered via mDNS/Avahi (e.g. `ollama.local:11434`).
+
+**NixOS integration:** Add `services.clawpi.localLLM` options for the inference server URL and model name. Could also package Ollama as a NixOS service on the Pi or a companion machine.
+
 ## Project Name
 
 ~~Find a proper name for the project.~~ ✅ **Done** — the project is now called **ClawPi**.

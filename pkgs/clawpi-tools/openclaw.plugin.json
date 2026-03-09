@@ -1,7 +1,7 @@
 {
   "id": "clawpi-tools",
   "name": "ClawPi Tools",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Hardware control tools for the ClawPi smart display (audio, display, overlays)",
   "configSchema": {
     "type": "object",

@@ -352,12 +352,20 @@ export default function (api: any) {
   api.registerTool({
     name: "audio_play",
     description:
-      "Play an audio file through the default audio output (speakers). " +
+      "Play an audio file through the Pi's speakers. " +
       "Supports WAV, MP3, OGG, FLAC, and other common formats. " +
-      "Non-WAV formats are automatically converted via ffmpeg before playback. " +
-      "Use this after the tts tool to play generated speech through the Pi's speakers " +
-      "— the tts tool outputs an MP3 file path (e.g. /tmp/openclaw/tts-.../voice-*.mp3), " +
-      "pass that path to this tool to make it audible on the display.",
+      "Non-WAV formats are automatically converted via ffmpeg before playback.\n\n" +
+      "IMPORTANT — Speaking to the user:\n" +
+      "When the user asks you to speak, talk, say something aloud, or " +
+      "uses phrases like 'tell me...', 'talk to me...', 'say ...' — " +
+      "you MUST use the tts tool to generate speech, then immediately call " +
+      "audio_play with the resulting MP3 path to play it through the speakers.\n" +
+      "If the user asks you to 'always speak your responses' or 'use voice for all replies', " +
+      "then for EVERY response (including replies via Telegram or other channels) " +
+      "also generate speech with tts and play it via audio_play on the display speakers. " +
+      "Continue doing this until the user tells you to stop.\n\n" +
+      "The tts tool outputs an MP3 file path (e.g. /tmp/openclaw/tts-.../voice-*.mp3) — " +
+      "pass that path to this tool.",
     parameters: Type.Object({
       path: Type.String({
         description:
