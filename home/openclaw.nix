@@ -4,6 +4,8 @@ let
   audioCfg = osConfig.services.clawpi.audio;
   groqCfg = osConfig.services.clawpi.audio.groq;
   debugCfg = osConfig.services.clawpi.debug;
+  canvasCfg = osConfig.services.clawpi.canvas;
+  canvasDir = if canvasCfg.tmpfs then "/tmp/clawpi-canvas" else "/var/lib/kiosk/.openclaw/canvas";
   elevenlabsCfg = osConfig.services.clawpi.elevenlabs;
   tgCfg = osConfig.services.clawpi.telegram;
 
@@ -194,7 +196,8 @@ in
     Service = {
       EnvironmentFile = "/var/lib/kiosk/.openclaw/gateway-token.env";
       Environment =
-        lib.optional debugCfg "OPENCLAW_LOG_LEVEL=debug"
+        [ "CLAWPI_CANVAS_DIR=${canvasDir}" ]
+        ++ lib.optional debugCfg "OPENCLAW_LOG_LEVEL=debug"
         ++ lib.optionals elevenlabsCfg.enable [
           "CLAWPI_ELEVENLABS_API_KEY_FILE=${toString elevenlabsCfg.apiKeyFile}"
           "CLAWPI_ELEVENLABS_VOICE=${elevenlabsCfg.voice}"

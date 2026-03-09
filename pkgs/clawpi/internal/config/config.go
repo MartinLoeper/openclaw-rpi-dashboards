@@ -10,6 +10,7 @@ type Config struct {
 	GatewayURL string
 	Token      string
 	WebAddr    string
+	CanvasDir  string
 	Debug      bool
 }
 
@@ -51,12 +52,18 @@ func Load() (*Config, error) {
 		webAddr = ":3100"
 	}
 
+	canvasDir := os.Getenv("CLAWPI_CANVAS_DIR")
+	if canvasDir == "" {
+		canvasDir = "/tmp/clawpi-canvas"
+	}
+
 	debug := os.Getenv("CLAWPI_DEBUG") == "1" || os.Getenv("CLAWPI_DEBUG") == "true"
 
 	return &Config{
 		GatewayURL: gatewayURL,
 		Token:      token,
 		WebAddr:    webAddr,
+		CanvasDir:  canvasDir,
 		Debug:      debug,
 	}, nil
 }

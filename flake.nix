@@ -67,6 +67,7 @@
         specialArgs = commonArgs.specialArgs;
         modules = commonArgs.modules ++ [
           {
+            services.clawpi.canvas.tmpfs = false;
             services.clawpi.audio.enable = true;
             services.clawpi.audio.groq.enable = true;
             services.clawpi.elevenlabs.enable = true;
@@ -100,6 +101,7 @@
         modules = commonArgs.modules ++ [
           {
             services.clawpi.debug = true;
+            services.clawpi.canvas.tmpfs = false;
             services.clawpi.audio.enable = true;
             services.clawpi.audio.groq.enable = true;
             services.clawpi.elevenlabs.enable = true;

@@ -58,3 +58,56 @@ Services that depend on `graphical-session.target` (eww, clawpi) start automatic
 ## Bigger Picture
 
 OpenClaw serves dashboard web applications on `http://localhost:3100`. The kiosk specialisation turns a Raspberry Pi 5 into a plug-and-play display appliance: power on, auto-login the `kiosk` user, launch labwc + Chromium, and render whatever OpenClaw is serving — no manual interaction required.
+
+## Canvas Workspace
+
+The canvas workspace is a writable directory on the Pi's filesystem where the OpenClaw agent can create static web files (HTML, CSS, JS, images, etc.). The ClawPi Go backend serves these files at `http://localhost:3100/canvas/`.
+
+### Architecture
+
+```
+Agent writes files → Canvas directory → Go FileServer → /canvas/ → Chromium kiosk
+                     (filesystem)        (http.Dir)      (HTTP)     (CDP navigate)
+```
+
+Unlike the landing page (which is `//go:embed`'d into the Go binary and immutable), the canvas uses `http.FileServer(http.Dir(...))` to serve mutable files from disk. This lets the agent create and update content at runtime.
+
+### Storage Modes
+
+Controlled by the `services.clawpi.canvas.tmpfs` NixOS option:
+
+| Mode | Path | Survives reboot | Use case |
+|------|------|-----------------|----------|
+| **tmpfs** (default) | `/tmp/clawpi-canvas` | No | Ephemeral content, experiments, one-off visualizations |
+| **persistent** | `/var/lib/kiosk/.openclaw/canvas` | Yes | Permanent dashboards, status displays |
+
+The directory is created automatically by the Go backend at startup via `os.MkdirAll`. Both the `clawpi` service and `openclaw-gateway` service receive the path via the `CLAWPI_CANVAS_DIR` environment variable.
+
+### Agent Tools
+
+Four tools give the agent full control over the canvas lifecycle:
+
+| Tool | Description |
+|------|-------------|
+| `canvas_folder` | Returns the workspace path and usage instructions (no side effects) |
+| `canvas_open` | Navigates kiosk Chromium to `http://localhost:3100/canvas/{path}` via CDP |
+| `canvas_close` | Navigates back to the landing page (`http://localhost:3100`) |
+| `canvas_reset` | Removes all files in the workspace directory |
+
+### Agent Workflow
+
+1. Agent calls `canvas_folder` to get the workspace path
+2. Agent writes HTML/CSS/JS files to that directory
+3. Agent calls `canvas_open` to navigate Chromium to the canvas
+4. User sees the content on the kiosk display
+5. Agent can update files and call `canvas_open` again to reload
+6. Agent calls `canvas_close` to return to the home screen
+7. Agent calls `canvas_reset` to clear the workspace and start fresh
+
+### Implementation Details
+
+- **Go backend** (`pkgs/clawpi/internal/web/server.go`): Mounts `http.StripPrefix("/canvas/", http.FileServer(http.Dir(canvasDir)))` on the existing mux
+- **Config** (`pkgs/clawpi/internal/config/config.go`): Reads `CLAWPI_CANVAS_DIR` env var (default: `/tmp/clawpi-canvas`)
+- **NixOS option** (`modules/clawpi.nix`): `services.clawpi.canvas.tmpfs` controls storage mode
+- **Environment wiring** (`home/clawpi.nix`, `home/openclaw.nix`): Both services get `CLAWPI_CANVAS_DIR`
+- **Agent tools** (`pkgs/clawpi-tools/canvas.ts`): CDP navigation + filesystem operations

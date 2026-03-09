@@ -30,7 +30,7 @@ func main() {
 
 	// Start web server with controller for TTS API
 	go func() {
-		if err := web.Serve(cfg.WebAddr, ctrl); err != nil {
+		if err := web.Serve(cfg.WebAddr, cfg.CanvasDir, ctrl); err != nil {
 			log.Fatalf("web server: %v", err)
 		}
 	}()

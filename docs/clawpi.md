@@ -27,6 +27,20 @@ The ClawPi overlay daemon serves a landing page that the kiosk Chromium displays
 
 The landing page is embedded in the `clawpi` Go binary and served at `http://localhost:<port>`. The kiosk Chromium opens this URL on startup.
 
+## Canvas Workspace
+
+The canvas is a writable directory where the agent creates static web files (HTML, CSS, JS). The ClawPi web server serves these files at `http://localhost:<port>/canvas/`.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `services.clawpi.canvas.tmpfs` | bool | `true` | `true` → workspace at `/tmp/clawpi-canvas` (volatile, cleared on reboot). `false` → workspace at `/var/lib/kiosk/.openclaw/canvas` (persistent, survives reboots). |
+
+The canvas directory is created automatically at startup by the Go backend. Both the `clawpi` and `openclaw-gateway` services receive the `CLAWPI_CANVAS_DIR` environment variable so the agent tools can locate it.
+
+**When to use persistent mode:** If the agent builds dashboards or UIs that should survive reboots (e.g. a permanent status display), set `canvas.tmpfs = false`. The workspace then lives inside the kiosk user's home directory alongside the OpenClaw config.
+
+**When to use tmpfs (default):** For ephemeral content like one-off visualizations, debugging output, or experiments. The workspace is automatically cleaned on every reboot.
+
 ## Telegram Channel
 
 Telegram is handled by the **built-in OpenClaw channel** — no separate bridge service is needed. The gateway process connects to the Telegram Bot API directly. These NixOS options are proxied into the OpenClaw Home Manager config automatically.

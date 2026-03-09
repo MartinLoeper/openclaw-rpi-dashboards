@@ -1,6 +1,8 @@
 { pkgs, osConfig, lib, ... }:
 let
   debugCfg = osConfig.services.clawpi.debug;
+  canvasCfg = osConfig.services.clawpi.canvas;
+  canvasDir = if canvasCfg.tmpfs then "/tmp/clawpi-canvas" else "/var/lib/kiosk/.openclaw/canvas";
 in
 {
   home.packages = [
@@ -50,6 +52,7 @@ in
         "CLAWPI_GATEWAY_URL=ws://localhost:18789"
         "CLAWPI_EWW_CONFIG=${pkgs.clawpi}/share/clawpi/eww"
         "CLAWPI_WEB_ADDR=:3100"
+        "CLAWPI_CANVAS_DIR=${canvasDir}"
       ] ++ lib.optional debugCfg "CLAWPI_DEBUG=1";
     };
   };

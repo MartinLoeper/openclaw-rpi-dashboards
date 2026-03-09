@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
 
 	"clawpi/internal/eww"
@@ -18,7 +19,7 @@ var landingFS embed.FS
 // Set by main to wire up the eww controller.
 var ewwController *eww.Controller
 
-func Serve(addr string, ctrl *eww.Controller) error {
+func Serve(addr string, canvasDir string, ctrl *eww.Controller) error {
 	ewwController = ctrl
 
 	sub, err := fs.Sub(landingFS, "landing-page")
@@ -26,8 +27,14 @@ func Serve(addr string, ctrl *eww.Controller) error {
 		return err
 	}
 
+	if err := os.MkdirAll(canvasDir, 0755); err != nil {
+		return err
+	}
+	log.Printf("canvas directory: %s", canvasDir)
+
 	mux := http.NewServeMux()
 	mux.Handle("/", http.FileServer(http.FS(sub)))
+	mux.Handle("/canvas/", http.StripPrefix("/canvas/", http.FileServer(http.Dir(canvasDir))))
 
 	// Show the TTS stop button overlay
 	mux.HandleFunc("POST /api/tts/playing", func(w http.ResponseWriter, r *http.Request) {

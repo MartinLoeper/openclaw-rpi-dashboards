@@ -36,6 +36,20 @@ in
       };
     };
 
+    canvas = {
+      tmpfs = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Whether the canvas workspace lives on tmpfs (cleared on reboot)
+          or inside the agent's persistent workspace directory.
+
+          - true  → /tmp/clawpi-canvas (volatile, auto-cleaned)
+          - false → /var/lib/kiosk/.openclaw/canvas (survives reboots)
+        '';
+      };
+    };
+
     audio = {
       enable = lib.mkEnableOption "audio transcription via whisper.cpp";
 
