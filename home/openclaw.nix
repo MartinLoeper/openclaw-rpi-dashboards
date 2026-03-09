@@ -133,7 +133,7 @@ in
   programs.openclaw = {
     enable = true;
     package = pkgs.openclaw-gateway;
-    documents = ../../documents;
+    documents = ../documents;
     skills = lib.optionals skillsCfg.enable [
       {
         name = "video-watcher";
@@ -158,6 +158,8 @@ in
           };
         };
       };
+      # Disable built-in canvas; we include our own canvas implementation via clawpi-tools
+      canvasHost.enabled = false;
       plugins = {
         enabled = true;
         allow = [ "clawpi-tools" "memory-core" ];
