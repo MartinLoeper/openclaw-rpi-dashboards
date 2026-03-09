@@ -42,6 +42,7 @@
       After = [ "openclaw-gateway-token.service" ];
       Requires = [ "openclaw-gateway-token.service" ];
     };
+    Install.WantedBy = [ "default.target" ];
     Service.EnvironmentFile = "/var/lib/kiosk/.openclaw/gateway-token.env";
   };
 }
