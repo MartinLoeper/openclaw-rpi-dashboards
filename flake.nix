@@ -188,13 +188,10 @@
             ps.piper-phonemize
             ps.webrtcvad
 
-            # Training data
-            ps.datasets
+            # Training data (soundfile for audio decoding)
+            ps.soundfile
             ps.speechbrain
             ps.mutagen
-
-            # TensorFlow for tflite conversion (onnx_tf installed via pip)
-            ps.tensorflow
 
             # General
             ps.pyyaml
