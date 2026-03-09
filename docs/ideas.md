@@ -37,6 +37,8 @@ Use [Eww](https://github.com/elkowar/eww) to overlay brief agent messages direct
 
 Teach the agent to respond to questions like "what is that?" or "what am I seeing?" by taking a screenshot of the current open tab via CDP and describing what's on screen. This makes the agent visually aware of the display — it can explain dashboards, interpret charts, read error messages, or describe any content shown on the kiosk.
 
+Also enable voice-controlled page navigation: "go down", "scroll up", "click [link text]", "go back". The agent interprets these as browser actions via CDP — scrolling the viewport, clicking elements by their visible text, navigating history. If a command is ambiguous (e.g. multiple links matching "click settings"), the agent should ask the user which one they mean.
+
 ## Real Fullscreen in Chrome
 
 The current `--kiosk` and `--start-fullscreen` flags don't fully eliminate window decorations inside Cage. Investigate proper fullscreen — possibly via Cage `-d` flag (already added), Chromium `--app` mode, or launching Chromium without a window manager entirely. Goal: zero chrome, zero borders, just content edge-to-edge.
