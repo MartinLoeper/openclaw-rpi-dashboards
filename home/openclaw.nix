@@ -12,6 +12,8 @@ let
   whisperWrapper = pkgs.writeShellScript "whisper-transcribe" ''
     input="$1"
     wav="''${input%.*}.wav"
+    # Show transcribing indicator (ignore errors if eww isn't running)
+    ${pkgs.eww}/bin/eww update clawpi_state=transcribing 2>/dev/null || true
     ${pkgs.ffmpeg-headless}/bin/ffmpeg -y -i "$input" -ar 16000 -ac 1 -c:a pcm_s16le "$wav" 2>/dev/null
     ${pkgs.whisper-cpp}/bin/whisper-cli \
       -m "${whisperModel}" \
@@ -19,7 +21,9 @@ let
       -np --no-gpu \
       "$wav" 2>/dev/null
     rc=$?
-    rm -f "$wav"
+    ${pkgs.coreutils}/bin/rm -f "$wav"
+    # Clear indicator (the clawpi daemon will take over with "thinking" once the agent starts)
+    ${pkgs.eww}/bin/eww update clawpi_state=idle 2>/dev/null || true
     exit $rc
   '';
 
