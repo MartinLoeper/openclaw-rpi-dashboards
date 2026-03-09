@@ -5,10 +5,13 @@ const exec = promisify(execFile);
 
 // NixOS system PATH — the gateway process may not inherit the full system path,
 // so we ensure common NixOS bin dirs are included.
+// Build a PATH that includes NixOS system bins AND the kiosk user's Home Manager
+// profile (where packages like grim are installed via home.packages).
 export const SYSTEM_PATH = [
   process.env.PATH,
   "/run/current-system/sw/bin",
   "/run/wrappers/bin",
+  `/etc/profiles/per-user/kiosk/bin`,
 ].filter(Boolean).join(":");
 
 // Run a command with the correct runtime dir and PATH.
