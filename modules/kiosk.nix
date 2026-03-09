@@ -17,7 +17,7 @@ in
     services.cage = {
       enable = true;
       user = "kiosk";
-      program = "${pkgs.chromium}/bin/chromium --kiosk --no-first-run --disable-infobars --noerrdialogs --disable-session-crashed-bubble --disable-pinch --overscroll-history-navigation=0 http://localhost:18789";
+      program = "${pkgs.chromium}/bin/chromium --kiosk --no-first-run --disable-infobars --noerrdialogs --disable-session-crashed-bubble --disable-pinch --overscroll-history-navigation=0 --remote-debugging-port=9222 http://localhost:18789";
       environment.NIXOS_OZONE_WL = "1";
     };
   };
