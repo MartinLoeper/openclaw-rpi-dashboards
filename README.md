@@ -14,89 +14,9 @@ See [docs/vision.md](docs/vision.md) for the full product vision and [docs/hardw
 
 NixOS configuration built on [nixos-raspberrypi](https://github.com/nvmd/nixos-raspberrypi).
 
-## Prerequisites
+## Quick Start
 
-Your NixOS host needs aarch64 cross-compilation support:
-
-```nix
-boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
-```
-
-## Initial Setup
-
-### Build the SD image
-
-```sh
-./scripts/build.sh
-```
-
-### Flash to SD card
-
-Use `flash-bmap.sh` (preferred) — it uses `bmaptool` which is significantly faster than a raw `dd`-style copy:
-
-```sh
-./scripts/flash-bmap.sh /dev/sdX
-```
-
-Alternatively, `flash.sh` uses [caligula](https://github.com/ifd3f/caligula) for an interactive flashing experience:
-
-```sh
-./scripts/flash.sh
-```
-
-### Boot the Pi
-
-Insert the SD card and power on. The partition table expands automatically on first boot.
-
-- **Hostname:** `openclaw-rpi5`
-- **User:** `nixos` (wheel group, passwordless sudo)
-- **SSH:** enabled, root login allowed
-
-### Set a password
-
-The `nixos` user has no password by default. On first boot, attach a keyboard and monitor and set one:
-
-```sh
-passwd nixos
-```
-
-You will need this password for the SSH key setup in the next step.
-
-## Ongoing Deploys
-
-### mDNS
-
-The Pi runs Avahi and advertises itself as `openclaw-rpi5.local` on the local network. Your workstation also needs mDNS resolution enabled:
-
-```nix
-services.avahi = {
-  enable = true;
-  nssmdns4 = true;
-};
-```
-
-### Set up SSH authentication
-
-Before the first deploy, set up key-based SSH auth:
-
-```sh
-./scripts/setup-ssh.sh                    # uses default host (openclaw-rpi5.local)
-./scripts/setup-ssh.sh 192.168.1.42       # use a specific IP
-```
-
-This generates an ed25519 key pair in the repo directory (gitignored) and copies it to the Pi. You will be prompted for the password you set in the previous step.
-
-### Deploy
-
-After SSH is set up, update the running Pi remotely via `nixos-rebuild`:
-
-```sh
-./scripts/deploy.sh                       # deploys to openclaw-rpi5.local (mDNS)
-./scripts/deploy.sh 192.168.1.42          # deploys to a specific IP
-./scripts/deploy.sh myhost -- --dry-run   # pass extra nixos-rebuild flags
-```
-
-This builds the system locally and copies the closure to the Pi over SSH. The generational bootloader (`"kernel"`) supports rollback to previous configurations.
+See [docs/getting-started.md](docs/getting-started.md) for prerequisites, initial setup, and first boot instructions. For ongoing deploys, see [docs/deployment.md](docs/deployment.md).
 
 ## Flake Structure
 
@@ -111,20 +31,7 @@ The [OpenClaw gateway](https://github.com/MartinLoeper/nix-openclaw) runs as a s
 
 ### Kiosk Specialisation
 
-A `kiosk` specialisation is available that launches Cage (Wayland kiosk compositor) + Chromium in fullscreen mode, auto-logged in as the `kiosk` system user. The base system remains CLI-only by default.
-
-```sh
-# Activate kiosk mode at runtime
-sudo /run/current-system/specialisation/kiosk/bin/switch-to-configuration switch
-
-# Return to CLI mode
-sudo /run/current-system/bin/switch-to-configuration switch
-
-# Deploy directly into kiosk mode
-./scripts/deploy.sh -- --specialisation kiosk
-```
-
-See [docs/canvas.md](docs/canvas.md) for the full design rationale.
+A `kiosk` specialisation launches labwc (Wayland compositor) + Chromium in fullscreen mode, auto-logged in as the `kiosk` system user. The base system remains CLI-only by default. See [docs/deployment.md](docs/deployment.md) for switching instructions and [docs/canvas.md](docs/canvas.md) for the design rationale.
 
 ## ClawPi Overlay Daemon
 
@@ -137,19 +44,7 @@ A custom Go service (`clawpi`) connects to the OpenClaw gateway WebSocket as a `
 
 ## PinchChat (Web UI)
 
-[PinchChat](https://github.com/MarlBurroW/pinchchat) provides a webchat interface for interacting with the OpenClaw gateway from your workstation. It connects via WebSocket through an SSH tunnel.
-
-```sh
-# Set up SSH tunnel to the gateway
-ssh -i id_ed25519_rpi5 -L 18789:127.0.0.1:18789 -N nixos@openclaw-rpi5.local
-
-# Run PinchChat
-docker run -d --name pinchchat -p 3000:80 \
-  -e VITE_GATEWAY_WS_URL=ws://localhost:18789 \
-  ghcr.io/marlburrow/pinchchat:latest
-```
-
-Open `http://localhost:3000` and enter the gateway token (retrieve with `./scripts/gateway-token.sh`).
+[PinchChat](https://github.com/MarlBurroW/pinchchat) provides a webchat interface for interacting with the OpenClaw gateway from your workstation. See [docs/deployment.md](docs/deployment.md) for setup instructions.
 
 ## Documentation
 

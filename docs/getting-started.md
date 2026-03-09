@@ -34,6 +34,21 @@ Cross-compiled closures are large. Ensure at least **~20 GB free** in `/nix/stor
 
 An SSH client is required for deploying to the Pi. `ssh-keygen` is used during initial key setup.
 
+### mDNS Resolution
+
+The Pi advertises itself as `openclaw-rpi5.local` via Avahi. Your workstation also needs mDNS resolution to find it:
+
+**NixOS:**
+
+```nix
+services.avahi = {
+  enable = true;
+  nssmdns4 = true;
+};
+```
+
+**Other distros:** install `avahi-daemon` and `nss-mdns`, and add `mdns4_minimal [NOTFOUND=return]` to the `hosts` line in `/etc/nsswitch.conf`.
+
 ### Optional Tools
 
 - **`bmaptool`** — for fast SD card flashing (see `scripts/flash-bmap.sh`)
@@ -69,27 +84,38 @@ Flash it to the SD card:
 
 ### 3. First Boot
 
-Insert the SD card, connect Ethernet, and power on the Pi. The system boots into CLI mode by default.
+Insert the SD card, connect Ethernet, and power on the Pi. The partition table expands automatically on first boot. The system boots into CLI mode by default.
 
-1. Copy your SSH key to the Pi:
+- **Hostname:** `openclaw-rpi5`
+- **User:** `nixos` (wheel group, passwordless sudo)
+- **SSH:** enabled, root login allowed
+
+1. Set a password for the `nixos` user (needed for the SSH key copy step):
+
+   ```sh
+   # On the Pi (attach a keyboard and monitor)
+   passwd nixos
+   ```
+
+2. Copy your SSH key to the Pi:
 
    ```sh
    ssh-copy-id -i id_ed25519_rpi5 nixos@openclaw-rpi5.local
    ```
 
-2. Deploy the kiosk specialisation:
+3. Deploy the kiosk specialisation:
 
    ```sh
    ./scripts/deploy.sh openclaw-rpi5.local --specialisation kiosk
    ```
 
-3. Set up the agent API key (required for AI features):
+4. Set up the agent API key (required for AI features):
 
    ```sh
    ./scripts/setup-agent-auth.sh openclaw-rpi5.local
    ```
 
-4. Retrieve the gateway token:
+5. Retrieve the gateway token:
 
    ```sh
    ./scripts/gateway-token.sh openclaw-rpi5.local
