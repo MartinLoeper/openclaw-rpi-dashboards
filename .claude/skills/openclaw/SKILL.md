@@ -115,6 +115,8 @@ curl -s -X POST http://localhost:18789/tools/invoke \
   -d '{"tool":"<tool_name>","input":{}}'
 ```
 
+**Limitation:** The `/tools/invoke` HTTP API does **not** forward parameters to the tool's `execute()` function — params are always `{}`. This means only parameterless tools (e.g. `audio_status`, `audio_get_volume`) can be meaningfully tested via this endpoint. Tools with parameters (e.g. `audio_set_volume`) work correctly when invoked by the agent during a conversation.
+
 ## Troubleshooting
 
 - **Plugin not loading:** Check `openclaw plugins list` — status should be `loaded`. If missing, verify `plugins.load.paths` in config points to the correct Nix store path.
