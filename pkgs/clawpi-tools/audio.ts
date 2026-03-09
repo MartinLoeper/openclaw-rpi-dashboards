@@ -6,6 +6,8 @@ import { join } from "node:path";
 import { run, text, SYSTEM_PATH } from "./helpers";
 import { execFile } from "node:child_process";
 
+const DEBUG = process.env.OPENCLAW_LOG_LEVEL === "debug" || process.env.CLAWPI_DEBUG === "1";
+
 // Read whisper config from the gateway's openclaw.json at import time.
 // Returns { command, model, language } or null if whisper is not configured.
 function getWhisperConfig(): { command: string; model: string; language: string } | null {
@@ -475,29 +477,44 @@ export default function (api: any) {
 
       await mkdir(outDir, { recursive: true });
 
-      const resp = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-        {
-          method: "POST",
-          headers: {
-            "xi-api-key": apiKey,
-            "Content-Type": "application/json",
-            Accept: "audio/mpeg",
-          },
-          body: JSON.stringify({
-            text: params.text,
-            model_id: modelId,
-          }),
+      const apiUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+      if (DEBUG) {
+        console.error(`[tts_hq] POST ${apiUrl} model=${modelId} text=${params.text.length} chars`);
+      }
+
+      const resp = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "xi-api-key": apiKey,
+          "Content-Type": "application/json",
+          Accept: "audio/mpeg",
         },
-      );
+        body: JSON.stringify({
+          text: params.text,
+          model_id: modelId,
+        }),
+      });
+
+      if (DEBUG) {
+        const hdrs: Record<string, string> = {};
+        resp.headers.forEach((v, k) => { hdrs[k] = v; });
+        console.error(`[tts_hq] response status=${resp.status} headers=${JSON.stringify(hdrs)}`);
+      }
 
       if (!resp.ok) {
         const errBody = await resp.text().catch(() => "");
+        if (DEBUG) {
+          console.error(`[tts_hq] error body: ${errBody}`);
+        }
         return text(`Error: ElevenLabs API returned ${resp.status}: ${errBody}`);
       }
 
       const buffer = Buffer.from(await resp.arrayBuffer());
       await writeFile(outFile, buffer);
+
+      if (DEBUG) {
+        console.error(`[tts_hq] wrote ${buffer.length} bytes to ${outFile}`);
+      }
 
       return text(
         `Generated speech (${buffer.length} bytes, voice=${voiceId}, model=${modelId}).\n` +

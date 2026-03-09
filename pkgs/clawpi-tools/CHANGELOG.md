@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1
+
+- Add debug logging to `tts_hq` tool (request, response headers, errors) behind `OPENCLAW_LOG_LEVEL=debug`
+
 ## 0.6.0
 
 - Add `tts_hq` tool — high-quality text-to-speech via ElevenLabs API
