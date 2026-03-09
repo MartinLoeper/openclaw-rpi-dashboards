@@ -18,7 +18,7 @@ in
       enable = true;
       user = "kiosk";
       extraArguments = [ "-d" ];
-      program = "${pkgs.chromium}/bin/chromium --kiosk --start-fullscreen --no-first-run --disable-infobars --noerrdialogs --disable-session-crashed-bubble --disable-pinch --overscroll-history-navigation=0 --remote-debugging-port=9222 https://excalidraw.com";
+      program = "${pkgs.chromium}/bin/chromium --app=https://excalidraw.com --start-fullscreen --start-maximized --no-first-run --noerrdialogs --disable-session-crashed-bubble --disable-pinch --overscroll-history-navigation=0 --remote-debugging-port=9222 --ozone-platform=wayland --enable-features=UseOzonePlatform";
       environment.NIXOS_OZONE_WL = "1";
     };
   };
