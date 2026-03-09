@@ -40,6 +40,15 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
   - `rpi5-installer` — for building flashable SD images
 - **Kiosk specialisation** — Cage + Chromium kiosk mode, activated at runtime or via deploy (see `docs/canvas.md`)
 - Base system is CLI-only; graphical stack is opt-in via the specialisation
+- **Known issue:** `nixos-rebuild --specialisation kiosk` doesn't always activate the specialisation. After deploying, verify and manually activate if needed:
+  ```sh
+  # Check which system is active (base vs kiosk)
+  readlink /run/current-system
+  # If cage-tty1.service is not running, the kiosk spec wasn't activated:
+  ssh nixos@<host> sudo systemctl status cage-tty1
+  # Manually activate the kiosk specialisation:
+  ssh nixos@<host> "sudo \$(readlink /nix/var/nix/profiles/system)/specialisation/kiosk/bin/switch-to-configuration switch"
+  ```
 - **File structure:**
   - `modules/base.nix` — system config (boot, users, networking, PipeWire, Avahi, SSH)
   - `modules/kiosk.nix` — kiosk specialisation (Cage + Chromium, PipeWire wait)
