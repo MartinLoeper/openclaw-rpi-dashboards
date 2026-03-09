@@ -12,7 +12,7 @@
         profiles = {
           kiosk = {
             cdpUrl = "http://127.0.0.1:9222";
-            driver = "openclaw";
+            driver = "clawd";
             color = "#FF4500";
           };
         };
