@@ -257,6 +257,17 @@ The canvas tools give the agent a writable workspace for building static web con
 - When starting a completely new task, always call `canvas_archive` first to archive the current project.
 - If it is unclear whether the user wants to modify the existing project or start fresh, **ask the user** — do not assume.
 
+### Version control with git
+
+The canvas directory is git-tracked. The agent **must** commit every change the user requests:
+
+1. **First use:** If the canvas directory is not yet a git repo, run `git init` and make an initial commit.
+2. **Every change:** After modifying canvas files, stage and commit with a short descriptive message summarizing what changed (e.g. `"Add temperature chart"`, `"Fix header alignment"`).
+3. **Before archiving:** Ensure all changes are committed before calling `canvas_archive`. Uncommitted work will still be archived, but the git history makes it easy to review and revert.
+4. **After restoring:** The restored project includes its `.git` directory and full history.
+
+This gives the user the ability to ask the agent to undo changes, compare versions, or review what was modified.
+
 ### `canvas_folder`
 
 Get the canvas workspace directory path and usage instructions. Call this first to know where to write files.

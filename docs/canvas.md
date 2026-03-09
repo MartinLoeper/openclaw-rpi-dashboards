@@ -107,12 +107,18 @@ Six tools give the agent full control over the canvas lifecycle:
 ### Agent Workflow
 
 1. Agent calls `canvas_folder` to get the workspace path
-2. Agent writes HTML/CSS/JS files to that directory
-3. Agent calls `canvas_open` to navigate Chromium to the canvas
-4. User sees the content on the kiosk display
-5. Agent can update files and call `canvas_open` again to reload
-6. Agent calls `canvas_close` to return to the home screen
-7. When starting a **new** project, agent calls `canvas_archive` to archive and clear
+2. Agent initializes a git repo if not already present (`git init`)
+3. Agent writes HTML/CSS/JS files to that directory
+4. Agent commits the changes with a descriptive message
+5. Agent calls `canvas_open` to navigate Chromium to the canvas
+6. User sees the content on the kiosk display
+7. Agent can update files, commit, and call `canvas_open` again to reload
+8. Agent calls `canvas_close` to return to the home screen
+9. When starting a **new** project, agent calls `canvas_archive` to archive and clear
+
+### Version Control
+
+Every canvas project is version-controlled with git. The agent commits after every user-requested change, giving users the ability to review history, undo changes, or compare versions. Archived projects retain their full `.git` history.
 
 #### Starting a new task
 

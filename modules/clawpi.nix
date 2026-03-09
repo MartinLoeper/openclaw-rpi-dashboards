@@ -216,7 +216,8 @@ in
     {
       # alsa-utils provides speaker-test, used by the audio_test_tone plugin tool
       # wf-recorder provides Wayland screen recording, used by screen_record_start/stop
-      environment.systemPackages = [ pkgs.alsa-utils pkgs.wf-recorder ];
+      # git is used by the agent for version-controlling canvas projects
+      environment.systemPackages = [ pkgs.alsa-utils pkgs.wf-recorder pkgs.git ];
     }
     (lib.mkIf cfg.audio.enable {
       environment.systemPackages = [ pkgs.whisper-cpp pkgs.file pkgs.ffmpeg-headless ]
