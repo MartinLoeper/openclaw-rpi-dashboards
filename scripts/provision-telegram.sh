@@ -42,19 +42,17 @@ echo "Done."
 echo ""
 echo "=== Next Steps ==="
 echo ""
-echo "1. Get your Telegram chat ID:"
-echo "   Send any message to your bot, then open:"
-echo "   https://api.telegram.org/bot${BOT_TOKEN}/getUpdates"
-echo "   Find your chat.id in the JSON response."
+echo "1. Enable the Telegram channel in your NixOS config:"
 echo ""
-echo "2. Enable the Telegram bridge in your NixOS config (modules/clawpi.nix is already imported):"
+echo '   services.clawpi.telegram.enable = true;'
 echo ""
-echo '   services.clawpi.telegram = {'
-echo '     enable = true;'
-echo "     tokenFile = \"${TOKEN_PATH}\";"
-echo '     allowedChatIds = [ <your-chat-id> ];'
-echo '   };'
+echo "   Optionally restrict access to specific Telegram user IDs:"
 echo ""
-echo "3. Deploy: ./scripts/deploy.sh ${TARGET_HOST} --specialisation kiosk"
+echo '   services.clawpi.telegram.allowFrom = [ 123456789 ];'
 echo ""
-echo "4. Check the service: ssh nixos@${TARGET_HOST} sudo systemctl status clawpi-telegram"
+echo "   (Get your user ID from @userinfobot on Telegram.)"
+echo "   Without allowFrom, anyone who finds your bot can message the agent."
+echo ""
+echo "2. Deploy: ./scripts/deploy.sh ${TARGET_HOST} --specialisation kiosk"
+echo ""
+echo "3. Verify: ssh nixos@${TARGET_HOST} sudo tail -50 /tmp/openclaw/openclaw-gateway.log"
