@@ -4,6 +4,16 @@ ClawPi ships an OpenClaw plugin (`clawpi-tools`) that gives the agent hardware c
 
 **Source:** `pkgs/clawpi-tools/`
 
+## Summary
+
+| Tool | Category | Parameters | Description |
+|------|----------|-----------|-------------|
+| `audio_status` | Audio | — | List all PipeWire sinks, sources, and devices |
+| `audio_get_volume` | Audio | — | Get current volume of default sink |
+| `audio_set_volume` | Audio | `level` (0.0–1.0) | Set volume of default sink |
+| `audio_test_tone` | Audio | `frequency?`, `duration?` | Play test sine wave (requires debug mode) |
+| `audio_set_default_sink` | Audio | `sink_id` | Switch default audio output by sink ID |
+
 ## Audio
 
 All audio tools operate on the PipeWire graph via WirePlumber (`wpctl`) and ALSA utilities (`speaker-test`). They run as the `kiosk` user with `XDG_RUNTIME_DIR` set automatically.
@@ -64,8 +74,10 @@ Switch the default audio output to a different sink. Use `audio_status` first to
 See `docs/ideas.md` for tools under consideration:
 
 - **Display power** — turn the connected display on/off via `wlr-randr` or DDC/CI
-- **TTS** — text-to-speech via KittenTTS, played through `pw-play`
+- **Display brightness** — adjust brightness via DDC/CI (`ddcutil`)
+- **Screenshot** — capture the full Wayland compositor output via `grim`
+- **Show choices** — Eww overlay for multi-option disambiguation, returns user selection
+- **Show message** — speech bubble Eww overlay with agent text
 - **Volume/brightness OSD** — Eww overlays when the agent adjusts hardware settings
-- **Choice picker** — Eww overlay for multi-option disambiguation
+- **Browser mode switch** — toggle between kiosk (`--app`) and browse (`--start-fullscreen`) mode
 - **Virtual keyboard** — on-screen keyboard for text input
-- **Screenshot** — capture the kiosk display via CDP
