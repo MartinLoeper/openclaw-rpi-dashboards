@@ -25,7 +25,7 @@
 
 (defwidget tts-stop-button []
   (button :class "tts-stop-btn"
-          :onclick "curl -sf -X POST http://localhost:3100/api/tts/stop >/dev/null 2>&1"
+          :onclick "curl -sf -X POST http://localhost:3100/api/tts/stop || echo '[eww] tts stop curl failed (rc=$?)' >&2"
     (box :space-evenly false
       (label :class "tts-stop-icon" :text "⏹")
       (label :class "tts-stop-text" :text "Stop"))))

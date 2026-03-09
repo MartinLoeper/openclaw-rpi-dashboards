@@ -41,6 +41,7 @@ func Serve(addr string, ctrl *eww.Controller) error {
 
 	// Kill any active pw-play process and hide the stop button
 	mux.HandleFunc("POST /api/tts/stop", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("tts stop: request received")
 		out, err := exec.Command("pkill", "-f", "pw-play").CombinedOutput()
 		if err != nil {
 			log.Printf("tts stop: pkill: %v (%s)", err, string(out))
