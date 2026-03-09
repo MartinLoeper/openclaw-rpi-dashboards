@@ -47,6 +47,16 @@ Find a proper name for the project. "openclaw-rpi-dashboards" is a working title
 
 Use [Eww](https://github.com/elkowar/eww) to overlay brief agent messages directly on screen in a speech bubble style — a lightweight alternative to TTS that costs fewer tokens. The agent writes short, direct status updates or responses to a file/socket, and an Eww widget renders them as a floating bubble on top of the kiosk browser. Cheaper and faster than generating audio, and works well on the small 10" display where brevity is key.
 
+## Virtual Keyboard via Eww
+
+Provide a button (Eww overlay) to open a virtual on-screen keyboard so the user can type directly into the agent's main session on the display. Use cases:
+
+- **Voice fallback** — when STT isn't available, isn't accurate enough, or the environment is too noisy
+- **Confidential input** — passwords, API keys, or private messages the user doesn't want to speak aloud
+- **Precision** — URLs, code snippets, or exact strings that are hard to dictate
+
+The keyboard widget should float over the kiosk browser, send keystrokes to the active OpenClaw chat session, and dismiss with a tap. Could reuse an existing Wayland virtual keyboard protocol or just POST text to the gateway WebSocket.
+
 ## Visual Awareness ("What am I seeing?")
 
 Teach the agent to respond to questions like "what is that?" or "what am I seeing?" by taking a screenshot of the current open tab via CDP and describing what's on screen. This makes the agent visually aware of the display — it can explain dashboards, interpret charts, read error messages, or describe any content shown on the kiosk.
