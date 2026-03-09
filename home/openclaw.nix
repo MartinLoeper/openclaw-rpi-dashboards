@@ -42,16 +42,30 @@ let
     fi
   '';
 
+  log = msg: lib.optionalString debugCfg
+    ''echo "[whisper-transcribe] ${msg}" >&2'';
+
   # Wrapper that transcribes audio. Tries Groq first (if enabled), falls back to local whisper.
   whisperWrapper = pkgs.writeShellScript "whisper-transcribe" ''
     input="$1"
     rc=1
+    ${log "input=$input"}
     # Show transcribing indicator (ignore errors if eww isn't running)
     ${pkgs.eww}/bin/eww update clawpi_state=transcribing 2>/dev/null || true
-    ${lib.optionalString groqCfg.enable groqTranscribe}
+    ${lib.optionalString groqCfg.enable ''
+    ${log "trying Groq (${groqCfg.model})..."}
+    ${groqTranscribe}
+    if [ "$rc" -eq 0 ]; then
+      ${log "Groq succeeded"}
+    else
+      ${log "Groq failed, falling back to local whisper"}
+    fi
+    ''}
     # Fall back to local whisper-cli if Groq failed or is disabled
     if [ "$rc" -ne 0 ]; then
+      ${log "using local whisper-cli (model=${audioCfg.model})"}
       ${localTranscribe}
+      ${log "local whisper-cli exited with rc=$rc"}
     fi
     # Clear indicator (the clawpi daemon will take over with "thinking" once the agent starts)
     ${pkgs.eww}/bin/eww update clawpi_state=idle 2>/dev/null || true
