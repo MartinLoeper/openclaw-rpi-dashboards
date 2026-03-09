@@ -25,13 +25,24 @@ pkgs/clawpi-tools/
 
 The gateway loads `index.ts` at startup via jiti (TypeScript runtime — no build step needed). The exported function receives an `api` object and calls `api.registerTool()` for each tool. Tools are then available to the agent during conversations.
 
+### Naming convention
+
+Tool names use a **category prefix** followed by an underscore and the action: `<category>_<action>`. This groups related tools together and makes them discoverable.
+
+Examples:
+- `audio_status`, `audio_get_volume`, `audio_set_volume` — Audio category
+- `display_power`, `display_brightness` — Display category
+- `browser_mode` — Browser category
+
+When adding a new tool, pick the category from the existing ones or introduce a new one if the tool doesn't fit.
+
 ### Tool anatomy
 
 ```ts
 import { Type } from "@sinclair/typebox";
 
 api.registerTool({
-  name: "tool_name",                    // unique identifier, used by the agent
+  name: "category_action",               // category prefix + action (e.g. audio_status)
   description: "What this tool does.",   // shown to the LLM
   parameters: Type.Object({             // JSON Schema via typebox
     param1: Type.String({ description: "..." }),
