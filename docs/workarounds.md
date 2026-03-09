@@ -33,3 +33,13 @@ Since `sdl3` is a transitive dependency of Chromium (via `sdl2-compat` → `ffmp
 ```
 
 **Upstream:** This is a nixpkgs issue — the test should be skipped in sandbox builds. Re-evaluate on nixpkgs updates and remove this overlay once the upstream fix lands.
+
+## uv excluded from OpenClaw package
+
+**Added:** 2026-03-09
+
+The `uv` Python package manager is an optional runtime tool in the OpenClaw batteries package. Building it on aarch64 fails because `cargo-auditable` panics during LTO on ARM. Rather than patching cargo-auditable, we switched from the batteries package (`pkgs.openclaw`) to the standalone gateway (`pkgs.openclaw-gateway`) in `home/openclaw.nix`, which doesn't bundle uv at all.
+
+This is acceptable because on NixOS we'd need to package any Python-based skills/tools via Nix anyway — relying on uv to install packages at runtime would break the reproducibility guarantees of the NixOS deployment.
+
+**Re-evaluate:** If upstream fixes cargo-auditable on aarch64, or if uv becomes essential for a workflow that can't be Nix-packaged.
