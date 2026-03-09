@@ -39,12 +39,11 @@ rir_paths:
   - "./data/mit_rirs"
 
 # Background noise for augmentation
+# AudioSet may be unavailable (404); FMA is the primary source
 background_paths:
-  - "./data/audioset_16k"
   - "./data/fma"
 
 background_paths_duplication_rate:
-  - 1
   - 1
 
 # Pre-computed features for false-positive validation (~11 hours)
