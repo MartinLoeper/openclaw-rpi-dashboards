@@ -192,8 +192,10 @@ export default function (api: any) {
     async execute(_id: string, params: { seconds: number }) {
       const tmpFile = `/tmp/clawpi-record-${randomBytes(4).toString("hex")}.wav`;
       try {
-        // pw-record doesn't have a duration flag — kill it after the timeout
+        // pw-record doesn't have a duration flag — we spawn it and kill after timeout.
+        // When killed, execFile reports an error with killed=true or signal=SIGTERM.
         await new Promise<void>((resolve, reject) => {
+          let killed = false;
           const child = execFile(
             "pw-record",
             ["--format", "s16", "--rate", "16000", "--channels", "1", tmpFile],
@@ -205,18 +207,19 @@ export default function (api: any) {
               },
             },
             (err) => {
-              // SIGTERM causes an error we can ignore
-              if (err && (err as any).signal !== "SIGTERM") reject(err);
+              if (err && !killed) reject(err);
               else resolve();
             },
           );
-          setTimeout(() => child.kill("SIGTERM"), params.seconds * 1000);
+          setTimeout(() => {
+            killed = true;
+            child.kill("SIGTERM");
+          }, params.seconds * 1000);
         });
         const data = await readFile(tmpFile);
         return {
           content: [
             { type: "text" as const, text: `Recorded ${params.seconds}s of audio (WAV, 16kHz mono, ${data.length} bytes).` },
-            { type: "resource" as const, resource: { uri: `data:audio/wav;base64,${data.toString("base64")}`, mimeType: "audio/wav", text: data.toString("base64") } },
           ],
         };
       } finally {
