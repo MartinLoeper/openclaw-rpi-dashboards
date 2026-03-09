@@ -30,6 +30,7 @@
             nix-openclaw.overlays.default
             (import ./overlays/openclaw-gateway-fix.nix)
             (import ./overlays/clawpi.nix)
+
           ];
         }
         home-manager.nixosModules.home-manager
@@ -48,6 +49,7 @@
         }
         ./modules/base.nix
         ./modules/kiosk.nix
+        ./modules/clawpi.nix
       ];
 
       commonArgs = {
@@ -58,6 +60,14 @@
     {
       # For ongoing deploys via nixos-rebuild (./deploy.sh)
       nixosConfigurations.rpi5 = nixos-raspberrypi.lib.nixosSystem commonArgs;
+
+      # With Telegram channel enabled
+      nixosConfigurations.rpi5-telegram = nixos-raspberrypi.lib.nixosSystem {
+        specialArgs = commonArgs.specialArgs;
+        modules = commonArgs.modules ++ [
+          { services.clawpi.telegram.enable = true; }
+        ];
+      };
 
       # For building flashable SD images (./build.sh)
       nixosConfigurations.rpi5-installer = nixos-raspberrypi.lib.nixosSystem {

@@ -1,4 +1,18 @@
-{ pkgs, ... }: {
+{ pkgs, osConfig, lib, ... }:
+let
+  tgCfg = osConfig.services.clawpi.telegram;
+
+  # Build the channels.telegram attrset only when enabled.
+  telegramChannel = lib.mkIf tgCfg.enable {
+    tokenFile = tgCfg.tokenFile;
+    allowFrom = lib.mkIf (tgCfg.allowFrom != [ ]) tgCfg.allowFrom;
+    groups."*".requireMention = tgCfg.requireMentionInGroups;
+    streaming = lib.mkIf (tgCfg.streaming != null) tgCfg.streaming;
+    replyToMode = lib.mkIf (tgCfg.replyToMode != null) tgCfg.replyToMode;
+    reactionLevel = lib.mkIf (tgCfg.reactionLevel != null) tgCfg.reactionLevel;
+  };
+in
+{
   programs.openclaw = {
     enable = true;
     package = pkgs.openclaw-gateway;
@@ -6,6 +20,7 @@
       gateway = {
         mode = "local";
       };
+      channels.telegram = telegramChannel;
       browser = {
         attachOnly = true;
         defaultProfile = "kiosk";

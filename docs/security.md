@@ -1,35 +1,34 @@
-# Security Considerations
+# Security
 
-## Kiosk User Isolation
+## Secrets Management
 
-The `kiosk` user runs the OpenClaw gateway and the agent. It is deliberately **not an admin**:
+**Credentials must never be stored in the NixOS configuration or the Nix store.** The Nix store is world-readable — any value embedded in a `.nix` file or interpolated into a derivation is visible to all users on the system.
 
-- System user (`isSystemUser = true`)
-- Groups: `kiosk`, `audio`, `video` only
-- Not in `wheel` — no sudo access
-- Home: `/var/lib/kiosk` (not a regular home directory)
-- Shell: `bash` (needed for agent command execution)
+### How We Handle Secrets
 
-This means the agent cannot escalate privileges, modify system configuration, install packages, or access other users' files.
+All secrets (API tokens, auth keys) are:
 
-## Credential Isolation
+1. **Stored on disk** in files with restrictive permissions (mode 600)
+2. **Loaded at runtime** by services via `EnvironmentFile` or `tokenFile` config options
+3. **Referenced by path** in config (e.g. `tokenFile = "/var/lib/clawpi/telegram-bot-token"`)
 
-Any credentials the agent should not directly access (e.g. Gmail App Passwords, API keys for external services) must run under a **separate system user**, exposed to the kiosk user only via a localhost API or socket. If credentials were stored in files readable by the kiosk user, the agent could read them directly.
+The config only contains the *path* to the secret file, never the secret value itself.
 
-Example: an email relay service runs as `mailrelay` user with the Gmail password, and exposes a restricted HTTP endpoint on localhost that the agent can call to send emails — but only to the user's own address.
+### Provisioning Scripts
 
-## Gateway Auth
+Use the scripts in `scripts/` to write secrets to the Pi:
 
-The gateway runs in `local` mode (loopback only) and requires a token for WebSocket connections. The token is auto-generated at first boot and stored in `~/.openclaw/gateway-token.env`. It is not exposed to the network.
+| Secret | Script | Destination |
+|--------|--------|-------------|
+| Telegram bot token | `scripts/provision-telegram.sh` | `/var/lib/clawpi/telegram-bot-token` |
+| Gateway token | Auto-generated on first boot | `/var/lib/kiosk/.openclaw/gateway-token.env` |
 
-## Agent API Key
+### Anti-Patterns (Don't Do This)
 
-The Anthropic API key is stored in `~/.openclaw/agents/main/agent/auth-profiles.json`. This file is readable by the kiosk user (necessary for the gateway to use it). This is an accepted trade-off — the agent needs the key to function, and the kiosk user is already isolated from the rest of the system.
+```nix
+# BAD: Token in the Nix store (world-readable!)
+channels.telegram.tokenFile = "123456789:ABCdef...";  # this is the token, not a file path!
 
-## Network Exposure
-
-- Gateway listens on `127.0.0.1:18789` only (not externally accessible)
-- CDP (Chrome DevTools Protocol) on `127.0.0.1:9222` only
-- Browser control on `127.0.0.1:18791` only
-- SSH is the only externally accessible service
-- Avahi/mDNS advertises the hostname for local network discovery
+# GOOD: Path to a file containing the token
+channels.telegram.tokenFile = "/var/lib/clawpi/telegram-bot-token";
+```
