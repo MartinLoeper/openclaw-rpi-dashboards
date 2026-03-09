@@ -1,6 +1,7 @@
 { pkgs, osConfig, lib, ... }:
 let
   audioCfg = osConfig.services.clawpi.audio;
+  debugCfg = osConfig.services.clawpi.debug;
   tgCfg = osConfig.services.clawpi.telegram;
 
   whisperModel = pkgs.whisper-model.override { model = audioCfg.model; };
@@ -120,6 +121,8 @@ in
     Install.WantedBy = [ "default.target" ];
     Service = {
       EnvironmentFile = "/var/lib/kiosk/.openclaw/gateway-token.env";
+    } // lib.optionalAttrs debugCfg {
+      Environment = [ "OPENCLAW_VERBOSE=1" ];
     } // lib.optionalAttrs audioCfg.enable {
       ExecStartPre = toString patchConfigScript;
     };
