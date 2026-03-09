@@ -2,11 +2,10 @@
 
 ## Deployment
 
-- **Target device:** Raspberry Pi 5 reachable at `openclaw-rpi5.local` (mDNS)
 - **Deploy command:** `./scripts/deploy.sh [host] --specialisation kiosk`
 - **Default specialisation:** `kiosk` (always deploy with `--specialisation kiosk` unless told otherwise)
-- **SSH user:** `nixos`
-- **SSH key:** `id_ed25519_rpi5` in repo root (gitignored), set up via `./scripts/setup-ssh.sh`
+- See `docs/deployment.md` for full deployment workflow, specialisation switching, and known issues.
+- See `docs/getting-started.md` for prerequisites and initial setup.
 
 ### Remote build cache
 
@@ -41,24 +40,12 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
 - **NixOS flake** with two configurations sharing `commonModules`:
   - `rpi5` — for live deploys via `nixos-rebuild`
   - `rpi5-installer` — for building flashable SD images
-- **Kiosk specialisation** — Cage + Chromium kiosk mode, activated at runtime or via deploy (see `docs/canvas.md`)
+- **Kiosk specialisation** — labwc + Chromium kiosk mode, activated at runtime or via deploy (see `docs/canvas.md`)
 - Base system is CLI-only; graphical stack is opt-in via the specialisation
-- **Known issue:** `nixos-rebuild --specialisation kiosk` doesn't always activate the specialisation. After deploying, verify and manually activate if needed:
-  ```sh
-  # Check which system is active (base vs kiosk)
-  readlink /run/current-system
-  # If cage-tty1.service is not running, the kiosk spec wasn't activated:
-  ssh nixos@<host> sudo systemctl status cage-tty1
-  # Manually activate the kiosk specialisation (use -f to resolve the full absolute path):
-  ssh nixos@<host> "sudo \$(readlink -f /nix/var/nix/profiles/system)/specialisation/kiosk/bin/switch-to-configuration switch"
-  # Then restart cage since switch-to-configuration skips it:
-  ssh nixos@<host> sudo systemctl restart cage-tty1
-  # Verify openclaw-gateway is running (may need manual start after spec switch):
-  ssh nixos@<host> "sudo -u kiosk XDG_RUNTIME_DIR=/run/user/\$(id -u kiosk) systemctl --user start openclaw-gateway"
-  ```
+- **Known issue:** specialisation may not activate on deploy — see `docs/deployment.md` for the manual activation procedure.
 - **File structure:**
   - `modules/base.nix` — system config (boot, users, networking, PipeWire, Avahi, SSH)
-  - `modules/kiosk.nix` — kiosk specialisation (Cage + Chromium, PipeWire wait)
+  - `modules/kiosk.nix` — kiosk specialisation (labwc + Chromium, PipeWire wait)
   - `home/openclaw.nix` — Home Manager config for OpenClaw gateway (kiosk user)
   - `overlays/openclaw-gateway-fix.nix` — pnpm dependency fix for openclaw-gateway
 
@@ -66,38 +53,10 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
 
 - **Service:** `openclaw-gateway.service` (systemd user service, kiosk user)
 - **Port:** `18789`
-- **Config:** managed by Home Manager (`programs.openclaw`)
-- **State dir:** `/var/lib/kiosk/.openclaw`
-- **User:** `kiosk` (system user with linger)
-- **Gateway mode:** `local` (loopback only)
-- **Auth token:** auto-generated at first boot, retrieve with `./scripts/gateway-token.sh`
-- **Flake input:** `nix-openclaw` (`github:MartinLoeper/nix-openclaw/main`)
-- **Kiosk URL:** `http://localhost:18789` (Chromium points here in kiosk mode)
 - **Logs:** `sudo tail -200 /tmp/openclaw/openclaw-gateway.log` on the Pi (not journalctl — stdout goes to file)
 - **Browser:** agent reuses the kiosk Chromium via CDP (`attachOnly`, port `9222`)
-- **Port forwarding:** access the gateway from your machine via SSH tunnel:
-  ```sh
-  ssh -i id_ed25519_rpi5 -L 18789:127.0.0.1:18789 -N nixos@<host>
-  ```
-  Then open `http://localhost:18789` locally.
-
-## PinchChat (Web UI)
-
-[PinchChat](https://github.com/MarlBurroW/pinchchat) is a webchat UI for interacting with the OpenClaw gateway from your workstation.
-
-```sh
-# 1. Set up SSH tunnel to the gateway
-ssh -i id_ed25519_rpi5 -L 18789:127.0.0.1:18789 -N nixos@<host>
-
-# 2. Run PinchChat
-docker run -d --name pinchchat -p 3000:80 \
-  -e VITE_GATEWAY_WS_URL=ws://localhost:18789 \
-  ghcr.io/marlburrow/pinchchat:latest
-
-# 3. Open http://localhost:3000 and enter the gateway token
-```
-
-Retrieve the token with `./scripts/gateway-token.sh`.
+- See `docs/openclaw.md` for full gateway details (auth, config, useful commands).
+- See `docs/deployment.md` for port forwarding and PinchChat setup.
 
 ## Writing Skills and Agent Instructions
 
