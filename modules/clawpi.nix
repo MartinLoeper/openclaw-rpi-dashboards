@@ -36,6 +36,32 @@ in
       };
     };
 
+    agent.documents = {
+      hardwareAwareness = {
+        enable = lib.mkEnableOption "hardware description in the agent's AGENTS.md";
+
+        spec = lib.mkOption {
+          type = lib.types.lines;
+          default = ''
+            ## Hardware
+
+            - **Device:** Raspberry Pi 5B (8GB RAM, Cortex-A76 quad-core)
+            - **Display:** 10-inch IPS touchscreen, 1280x800, connected via HDMI
+            - **Audio output:** HDMI audio via PipeWire (speaker bar)
+            - **Microphone:** USB microphone on the speaker bar (low gain — best for close range)
+            - **Browser:** Chromium in kiosk mode (labwc Wayland compositor), controlled via CDP on port 9222
+            - **Network:** Ethernet and Wi-Fi, discoverable as `openclaw-rpi5.local` via mDNS
+
+            You are in app mode — always use the browser `navigate` action to change pages. Never open new windows (this stacks windows inside the compositor and is not recoverable without restart).
+          '';
+          description = ''
+            Markdown text describing the hardware setup. Injected into the
+            agent's AGENTS.md when hardwareAwareness is enabled.
+          '';
+        };
+      };
+    };
+
     canvas = {
       tmpfs = lib.mkOption {
         type = lib.types.bool;

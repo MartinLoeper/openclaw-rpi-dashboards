@@ -2,7 +2,11 @@
 
 ## Seeded Agent Personality — ✅ Done
 
-Implemented via `documents/AGENTS.md` which is injected into the agent's system prompt. Contains hardware-aware context, canvas workspace instructions, and audio device awareness.
+Implemented via `documents/AGENTS.md` which is injected into the agent's system prompt. Contains:
+- Hardware identity (RPi 5B, display, audio, mic, browser mode)
+- Audio device awareness (call `audio_status` early)
+- Canvas workspace instructions (version control, archiving, static files only)
+- Browser mode guidance (navigate, don't open new windows)
 
 ## Attached Hardware
 

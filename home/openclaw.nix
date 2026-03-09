@@ -10,6 +10,32 @@ let
   elevenlabsCfg = osConfig.services.clawpi.elevenlabs;
   tgCfg = osConfig.services.clawpi.telegram;
 
+  # Append ClawPi-specific instructions to the agent's AGENTS.md at service start.
+  # Uses a marker comment so the block is only injected once and updated in-place on redeploy.
+  hwCfg = osConfig.services.clawpi.agent.documents.hardwareAwareness;
+  clawpiAgentsExtra = builtins.readFile ../documents/AGENTS.md;
+  clawpiBlock = lib.concatStringsSep "\n" (
+    [ clawpiAgentsExtra ]
+    ++ lib.optional hwCfg.enable hwCfg.spec
+  );
+  clawpiBlockFile = pkgs.writeText "clawpi-agents-block.md" ''
+    <!-- BEGIN CLAWPI — managed by Nix, do NOT edit or remove this block -->
+    ${clawpiBlock}
+    <!-- END CLAWPI -->
+  '';
+  patchAgentsScript = pkgs.writeShellScript "patch-agents-md" ''
+    agentsFile="$HOME/.openclaw/workspace/AGENTS.md"
+    # Recreate AGENTS.md if the agent (or something else) deleted it
+    if [ ! -f "$agentsFile" ]; then
+      ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$agentsFile")"
+      ${pkgs.coreutils}/bin/echo "# AGENTS" > "$agentsFile"
+    fi
+    # Strip old block (handles both intact markers and orphaned single markers)
+    ${pkgs.gnused}/bin/sed -i '/<!-- BEGIN CLAWPI -->/,/<!-- END CLAWPI -->/d' "$agentsFile"
+    ${pkgs.gnused}/bin/sed -i '/<!-- BEGIN CLAWPI/d;/<!-- END CLAWPI/d' "$agentsFile"
+    ${pkgs.coreutils}/bin/cat ${clawpiBlockFile} >> "$agentsFile"
+  '';
+
   whisperModel = pkgs.whisper-model.override { model = audioCfg.model; };
 
   # Local transcription: convert to WAV then run whisper-cli
@@ -133,7 +159,6 @@ in
   programs.openclaw = {
     enable = true;
     package = pkgs.openclaw-gateway;
-    documents = ../documents;
     skills = lib.optionals skillsCfg.enable [
       {
         name = "video-watcher";
@@ -207,8 +232,8 @@ in
           "CLAWPI_ELEVENLABS_VOICE=${elevenlabsCfg.voice}"
           "CLAWPI_ELEVENLABS_MODEL=${elevenlabsCfg.model}"
         ];
-    } // lib.optionalAttrs audioCfg.enable {
-      ExecStartPre = toString patchConfigScript;
+      ExecStartPre = [ (toString patchAgentsScript) ]
+        ++ lib.optional audioCfg.enable (toString patchConfigScript);
     };
   };
 
