@@ -2,6 +2,10 @@
   xdg.configFile."labwc/autostart" = {
     executable = true;
     text = ''
+      # Notify systemd that the graphical session is up
+      systemctl --user import-environment WAYLAND_DISPLAY
+      systemctl --user start graphical-session.target
+
       # Wait for PipeWire socket (HDMI audio)
       socket="/run/user/$(id -u)/pipewire-0"
       for i in $(seq 1 30); do
