@@ -41,6 +41,14 @@ Contextual questions about visible content: "is there anything funny?" — agent
 
 Also enable voice-controlled page navigation: "go down", "scroll up", "click [link text]", "go back". The agent interprets these as browser actions via CDP — scrolling the viewport, clicking elements by their visible text, navigating history. If a command is ambiguous (e.g. multiple links matching "click settings"), the agent should ask the user which one they mean.
 
+## Email Relay (send-only, restricted recipient)
+
+Give the agent the ability to email the user — e.g. "email me a summary of this dashboard" or "send me that screenshot". Use `msmtp` (zero-daemon, NixOS-native) to relay through the user's Gmail account with a Gmail App Password.
+
+**Recipient restriction:** msmtp has no built-in filtering, so wrap it with a script that only allows sending to the user's own email address. This prevents abuse if the Pi is compromised — the Gmail credentials can only reach one inbox.
+
+**Security:** msmtp and the Gmail credentials must run under a separate system user (not `kiosk`), exposed to OpenClaw only via a localhost HTTP endpoint or socket. If msmtp ran as the kiosk user, the agent could read the App Password from the process or config file directly. The relay service validates the recipient and the agent only has access to a "send email" API — never the credentials.
+
 ## Real Fullscreen in Chrome
 
 The current `--kiosk` and `--start-fullscreen` flags don't fully eliminate window decorations inside Cage. Investigate proper fullscreen — possibly via Cage `-d` flag (already added), Chromium `--app` mode, or launching Chromium without a window manager entirely. Goal: zero chrome, zero borders, just content edge-to-edge.
