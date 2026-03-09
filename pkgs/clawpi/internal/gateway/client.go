@@ -11,13 +11,33 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// AgentState represents the current state of the agent as derived from gateway events.
+type AgentState string
+
+const (
+	StateIdle         AgentState = "idle"
+	StateThinking     AgentState = "thinking"
+	StateResponding   AgentState = "responding"
+	StateToolUse      AgentState = "tool_use"
+	StateDisconnected AgentState = "disconnected"
+)
+
 type Client struct {
-	url   string
-	token string
+	url           string
+	token         string
+	OnStateChange func(state AgentState, toolName string)
+	OnDisconnect  func()
+	OnConnect     func()
 }
 
 func NewClient(url, token string) *Client {
 	return &Client{url: url, token: token}
+}
+
+func (c *Client) emitState(state AgentState, toolName string) {
+	if c.OnStateChange != nil {
+		c.OnStateChange(state, toolName)
+	}
 }
 
 // Run connects to the gateway WebSocket and logs all received messages.
@@ -31,6 +51,10 @@ func (c *Client) Run() error {
 		err := c.connect()
 		if err != nil {
 			log.Printf("connection error: %v", err)
+		}
+
+		if c.OnDisconnect != nil {
+			c.OnDisconnect()
 		}
 
 		log.Printf("reconnecting in %v...", backoff)
@@ -124,10 +148,62 @@ func (c *Client) connect() error {
 
 			authenticated = true
 			log.Printf("connect request sent")
+			// Reset backoff on successful auth
+			if c.OnConnect != nil {
+				c.OnConnect()
+			}
 			continue
 		}
 
-		logMessage(&msg, data)
+		c.handleEvent(&msg, data)
+	}
+}
+
+func (c *Client) handleEvent(msg *GatewayMessage, raw []byte) {
+	// Skip noisy periodic events
+	if msg.Event == "tick" || msg.Event == "health" {
+		return
+	}
+
+	// Log all non-trivial events
+	logMessage(msg, raw)
+
+	if msg.Event != "agent" || len(msg.Data) == 0 {
+		return
+	}
+
+	var agentEvent AgentEventData
+	if err := json.Unmarshal(msg.Data, &agentEvent); err != nil {
+		return
+	}
+
+	switch agentEvent.Stream {
+	case "lifecycle":
+		var lc LifecycleData
+		if err := json.Unmarshal(agentEvent.Data, &lc); err != nil {
+			return
+		}
+		switch lc.Phase {
+		case "start":
+			c.emitState(StateThinking, "")
+		case "end":
+			c.emitState(StateIdle, "")
+		}
+
+	case "assistant":
+		c.emitState(StateResponding, "")
+
+	case "tool_use":
+		var tool ToolEventData
+		if err := json.Unmarshal(agentEvent.Data, &tool); err == nil && tool.Name != "" {
+			c.emitState(StateToolUse, tool.Name)
+		} else {
+			c.emitState(StateToolUse, "tool")
+		}
+
+	case "tool_result":
+		// Tool finished — agent likely goes back to thinking
+		c.emitState(StateThinking, "")
 	}
 }
 

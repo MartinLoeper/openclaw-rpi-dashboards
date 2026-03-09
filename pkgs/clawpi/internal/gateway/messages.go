@@ -50,3 +50,22 @@ type ConnectClient struct {
 type ConnectAuth struct {
 	Token string `json:"token,omitempty"`
 }
+
+// AgentEventData is the data payload for event="agent" messages.
+type AgentEventData struct {
+	RunID      string          `json:"runId"`
+	Stream     string          `json:"stream"`
+	SessionKey string          `json:"sessionKey"`
+	Seq        int             `json:"seq"`
+	Data       json.RawMessage `json:"data"`
+}
+
+// LifecycleData is the inner data for stream="lifecycle" agent events.
+type LifecycleData struct {
+	Phase string `json:"phase"`
+}
+
+// ToolEventData is the inner data for stream="tool_use"/"tool_result" agent events.
+type ToolEventData struct {
+	Name string `json:"name"`
+}

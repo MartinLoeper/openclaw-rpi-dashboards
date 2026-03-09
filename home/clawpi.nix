@@ -23,6 +23,7 @@
       EnvironmentFile = "/var/lib/kiosk/.openclaw/gateway-token.env";
       Environment = [
         "CLAWPI_GATEWAY_URL=ws://localhost:18789"
+        "CLAWPI_EWW_CONFIG=${pkgs.clawpi}/share/clawpi/eww"
       ];
     };
   };
