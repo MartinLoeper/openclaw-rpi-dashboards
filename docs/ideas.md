@@ -174,3 +174,12 @@ Give the agent a tool to turn the connected display on and off (e.g. "turn off t
 - **DDC/CI route:** `ddcutil setvcp D6 4` (standby) / `ddcutil setvcp D6 1` (on) — works over HDMI if the monitor supports DDC
 - **Expose as OpenClaw tool:** wrap in a skill with a `display_power` tool (`action: "on" | "off" | "toggle"`) so the agent can control it naturally
 - **Schedule support:** combine with cron or systemd timers for automatic screen-off at night
+
+## Cachix Binary Cache
+
+Set up a [Cachix](https://www.cachix.org/) cache for the project so community users can pull pre-built aarch64 closures instead of building from source. Cross-compiling on x86_64 under QEMU is painfully slow, and not everyone can (or wants to) spin up a Hetzner ARM builder — even though it costs less than $1 for a full build, it still requires a Hetzner account and SSH setup.
+
+- **CI integration** — push to Cachix from a GitHub Actions workflow on every merge to `master`. Use a native aarch64 runner (GitHub now offers `ubuntu-24.04-arm`) or cross-build with QEMU and cache the result.
+- **Flake nixConfig** — add the Cachix cache to `extra-substituters` and `extra-trusted-public-keys` in `flake.nix` so users get cache hits automatically on `nix build` without any manual config.
+- **README instructions** — document that builds are cached and should complete in minutes, not hours. This is a key selling point for community adoption: `nix build` just works, no ARM hardware or cloud accounts needed.
+- **Cache scope** — cache the full system closure (`nixosConfigurations.rpi5`) and the SD image (`installerImages.rpi5`) so both deploy and first-install paths are fast.
