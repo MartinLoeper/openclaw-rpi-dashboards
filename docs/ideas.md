@@ -165,3 +165,12 @@ Write a script to interact with the running OpenClaw agent from the workstation 
 **Status:** Partially working. The `openclaw agent` command connects to the gateway but auth is tricky — the CLI expects `gateway.remote.token` in config to match the running gateway's token. First attempt also overwrote the config and generated a new `gateway.auth.token`, breaking the running gateway. Needs research into proper CLI→gateway auth flow without clobbering config.
 
 **Simplest approach:** Spawn an SFTP server on the user's laptop pointing at a temp directory. SFTP is installed on most modern Linux distros out of the box, and tools like yazi have excellent SFTP integration for browsing transferred files. The agent on the Pi just `sftp put`s files to the laptop — no custom app needed.
+
+## Display Power Control
+
+Give the agent a tool to turn the connected display on and off (e.g. "turn off the screen", "wake up the display"). Use `wlr-randr` (available under Cage/Wayland) or DDC/CI via `ddcutil` to toggle DPMS / display power state. This enables energy saving, privacy ("blank the screen"), and scheduled display sleep/wake without physically touching the monitor.
+
+- **Wayland route:** `wlr-randr --output <name> --off` / `--on` (Cage supports wlr-output-management)
+- **DDC/CI route:** `ddcutil setvcp D6 4` (standby) / `ddcutil setvcp D6 1` (on) — works over HDMI if the monitor supports DDC
+- **Expose as OpenClaw tool:** wrap in a skill with a `display_power` tool (`action: "on" | "off" | "toggle"`) so the agent can control it naturally
+- **Schedule support:** combine with cron or systemd timers for automatic screen-off at night
