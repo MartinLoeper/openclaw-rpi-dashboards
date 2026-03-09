@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0
+
+- Add `screen_record_start` tool — start Wayland screen recording via wf-recorder
+- Add `screen_record_stop` tool — stop recording and return file path/size
+- Only one recording at a time; start returns error if already recording
+- Supports MP4/MKV/WebM containers and optional audio capture
+
 ## 0.8.0
 
 - Add `tts_stop` tool — stop audio playback by killing pw-play
