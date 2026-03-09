@@ -59,6 +59,8 @@ Give the agent the ability to email the user — e.g. "email me a summary of thi
 
 **Security:** msmtp and the Gmail credentials must run under a separate system user (not `kiosk`), exposed to OpenClaw only via a localhost HTTP endpoint or socket. If msmtp ran as the kiosk user, the agent could read the App Password from the process or config file directly. The relay service validates the recipient and the agent only has access to a "send email" API — never the credentials.
 
+**Custom skill with tools:** To make email a first-class agent capability, write a proper OpenClaw skill with a custom tool definition. The skill's `SKILL.md` frontmatter can define a `send_email` tool (with parameters like `subject`, `body`, `attachments`) that calls the relay HTTP endpoint under the hood. This way the agent doesn't need to manually construct `curl` commands — it just invokes the tool naturally. See [Creating Skills — Add Tools](https://docs.openclaw.ai/tools/creating-skills#3-add-tools-optional) for the tool definition format.
+
 ## Real Fullscreen in Chrome
 
 The current `--kiosk` and `--start-fullscreen` flags don't fully eliminate window decorations inside Cage. Investigate proper fullscreen — possibly via Cage `-d` flag (already added), Chromium `--app` mode, or launching Chromium without a window manager entirely. Goal: zero chrome, zero borders, just content edge-to-edge.
