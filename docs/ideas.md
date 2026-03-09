@@ -43,6 +43,15 @@ This is a real differentiator vs. Raspberry Pi projects that rely on manual `apt
 
 Find a proper name for the project. "openclaw-rpi-dashboards" is a working title — it undersells the vision and ties it to a single use case. The name should convey that this is a general-purpose AI-powered smart display platform, not just a dashboard viewer. Ideally short, memorable, and available as a GitHub org / npm scope / domain.
 
+## Reliable mDNS / Avahi
+
+mDNS (`openclaw-rpi5.local`) is critical for a good UX — users shouldn't have to find or remember the Pi's IP address. Currently Avahi works most of the time but occasionally fails to resolve, forcing fallback to a raw IP. Investigate and fix:
+
+- **Avahi service stability** — ensure `avahi-daemon` starts early and stays running across specialisation switches and reboots
+- **Reflector / network config** — some routers or network setups block mDNS multicast; document known-good configurations
+- **Fallback script logic** — `deploy.sh` and other scripts should retry mDNS a few times before failing, or auto-discover the IP via ARP/nmap as a fallback
+- **Multiple interfaces** — if the Pi has both Ethernet and Wi-Fi, Avahi should advertise on all active interfaces
+
 ## Speech Bubble Overlay via Eww
 
 Use [Eww](https://github.com/elkowar/eww) to overlay brief agent messages directly on screen in a speech bubble style — a lightweight alternative to TTS that costs fewer tokens. The agent writes short, direct status updates or responses to a file/socket, and an Eww widget renders them as a floating bubble on top of the kiosk browser. Cheaper and faster than generating audio, and works well on the small 10" display where brevity is key.
@@ -74,6 +83,10 @@ Give the agent the ability to email the user — e.g. "email me a summary of thi
 **Security:** msmtp and the Gmail credentials must run under a separate system user (not `kiosk`), exposed to OpenClaw only via a localhost HTTP endpoint or socket. If msmtp ran as the kiosk user, the agent could read the App Password from the process or config file directly. The relay service validates the recipient and the agent only has access to a "send email" API — never the credentials.
 
 **Custom skill with tools:** To make email a first-class agent capability, write a proper OpenClaw skill with a custom tool definition. The skill's `SKILL.md` frontmatter can define a `send_email` tool (with parameters like `subject`, `body`, `attachments`) that calls the relay HTTP endpoint under the hood. This way the agent doesn't need to manually construct `curl` commands — it just invokes the tool naturally. See [Creating Skills — Add Tools](https://docs.openclaw.ai/tools/creating-skills#3-add-tools-optional) for the tool definition format.
+
+## Specialisation Selector (TUI)
+
+Write a `scripts/spec-select.sh` script that lets the user pick the active NixOS specialisation (or base CLI mode) on the device using a nice TUI powered by [gum](https://github.com/charmbracelet/gum). The script SSHs into the Pi, lists available specialisations, presents a `gum choose` menu, activates the selected one via `switch-to-configuration`, and restarts the relevant services (Cage, gateway). This replaces the current manual `readlink -f` + `switch-to-configuration` dance with a single command.
 
 ## Real Fullscreen in Chrome
 

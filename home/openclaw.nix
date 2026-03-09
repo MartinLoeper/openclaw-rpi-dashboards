@@ -45,4 +45,23 @@
     Install.WantedBy = [ "default.target" ];
     Service.EnvironmentFile = "/var/lib/kiosk/.openclaw/gateway-token.env";
   };
+
+  # The HM openclaw module generates the gateway unit without [Install],
+  # so our Install.WantedBy above doesn't take effect. Work around by
+  # creating a helper service that is properly enabled and starts the gateway.
+  systemd.user.services.openclaw-gateway-start = {
+    Unit = {
+      Description = "Start OpenClaw gateway";
+      Wants = [ "openclaw-gateway.service" ];
+      After = [ "openclaw-gateway-token.service" ];
+    };
+    Install.WantedBy = [ "default.target" ];
+    Service = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = toString (pkgs.writeShellScript "start-openclaw-gateway" ''
+        ${pkgs.systemd}/bin/systemctl --user start openclaw-gateway.service
+      '');
+    };
+  };
 }
