@@ -5,19 +5,40 @@ let
 
   whisperModel = pkgs.whisper-model.override { model = audioCfg.model; };
 
-  # Build audio.transcription config when enabled.
-  audioConfig = lib.mkIf audioCfg.enable {
-    transcription = {
-      command = [
-        "${pkgs.whisper-cpp}/bin/whisper-cli"
-        "-m" "${whisperModel}"
-        "-l" audioCfg.language
-        "-np"
-        "--no-gpu"
+  # JSON snippet to inject tools.media config for whisper-cli transcription.
+  # The typed Nix config schema doesn't expose tools.media.models, so we
+  # patch openclaw.json via ExecStartPre before the gateway reads it.
+  whisperMediaConfig = builtins.toJSON {
+    tools.media = {
+      audio.language = audioCfg.language;
+      models = [
+        {
+          type = "cli";
+          provider = "whisper.cpp";
+          id = "whisper-${audioCfg.model}";
+          command = "${pkgs.whisper-cpp}/bin/whisper-cli";
+          args = [
+            "-m" "${whisperModel}"
+            "-l" audioCfg.language
+            "-np"
+            "--no-gpu"
+          ];
+          capabilities = [ "audio" ];
+          timeoutSeconds = audioCfg.timeoutSeconds;
+        }
       ];
-      timeoutSeconds = audioCfg.timeoutSeconds;
     };
   };
+
+  whisperMediaConfigFile = pkgs.writeText "openclaw-media-config.json" whisperMediaConfig;
+
+  patchConfigScript = pkgs.writeShellScript "patch-openclaw-audio" ''
+    configFile="$HOME/.openclaw/openclaw.json"
+    if [ -f "$configFile" ]; then
+      ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$configFile" "${whisperMediaConfigFile}" > "$configFile.tmp" \
+        && mv "$configFile.tmp" "$configFile"
+    fi
+  '';
 
   # Build the channels.telegram attrset only when enabled.
   telegramChannel = lib.mkIf tgCfg.enable {
@@ -49,7 +70,6 @@ in
       gateway = {
         mode = "local";
       };
-      audio = audioConfig;
       channels.telegram = telegramChannel;
       browser = {
         attachOnly = true;
@@ -99,7 +119,11 @@ in
       Requires = [ "openclaw-gateway-token.service" ];
     };
     Install.WantedBy = [ "default.target" ];
-    Service.EnvironmentFile = "/var/lib/kiosk/.openclaw/gateway-token.env";
+    Service = {
+      EnvironmentFile = "/var/lib/kiosk/.openclaw/gateway-token.env";
+    } // lib.optionalAttrs audioCfg.enable {
+      ExecStartPre = toString patchConfigScript;
+    };
   };
 
   # The HM openclaw module generates the gateway unit without [Install],

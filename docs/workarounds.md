@@ -43,3 +43,25 @@ The `uv` Python package manager is an optional runtime tool in the OpenClaw batt
 This is acceptable because on NixOS we'd need to package any Python-based skills/tools via Nix anyway — relying on uv to install packages at runtime would break the reproducibility guarantees of the NixOS deployment.
 
 **Re-evaluate:** If upstream fixes cargo-auditable on aarch64, or if uv becomes essential for a workflow that can't be Nix-packaged.
+
+## Telegram streaming mode set to "block"
+
+**Added:** 2026-03-09
+
+The default streaming behavior causes partial message edits in Telegram, resulting in a poor user experience (message flicker, incomplete text shown briefly).
+
+**Fix:** Both `streaming = "block"` and `blockStreaming = true` are set in the Telegram channel config for all Telegram-enabled flake outputs (`rpi5-telegram`, `rpi5-telegram-debug`).
+
+**Upstream:** [openclaw/openclaw#34790](https://github.com/openclaw/openclaw/issues/34790). Revert `streaming` to `"partial"` and `blockStreaming` to `null` once fixed.
+
+## Audio transcription: `tools.media.models` injected via ExecStartPre
+
+**Added:** 2026-03-09
+
+The OpenClaw gateway reads audio transcription models from `config.tools.media.models`, but the nix-openclaw Home Manager module's typed config schema (generated from upstream at rev `addd290f`) does not expose the `tools.media` path. The `audio.transcription.command` field in the schema is unrelated — the gateway's media understanding subsystem ignores it for voice message transcription.
+
+**Fix:** A systemd `ExecStartPre` script on the gateway service patches `~/.openclaw/openclaw.json` with `jq` to inject the `tools.media` section (whisper-cli model entry) before the gateway starts. This merges on top of the Home Manager-generated config without conflicting with the typed schema.
+
+See `home/openclaw.nix` — the `patchConfigScript` and `whisperMediaConfig` definitions.
+
+**Re-evaluate:** After updating the `nix-openclaw` flake input. If the upstream schema adds `tools.media.models` as a typed option, remove the `ExecStartPre` patch and configure it directly via `programs.openclaw.config`.

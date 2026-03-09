@@ -2,12 +2,12 @@
 
 ## Current Implementation (whisper.cpp)
 
-Local audio transcription using [whisper.cpp](https://github.com/ggerganov/whisper.cpp) on the Pi. The gateway invokes whisper-cli as an external command via the `audio.transcription.command` config.
+Local audio transcription using [whisper.cpp](https://github.com/ggerganov/whisper.cpp) on the Pi. The gateway's media understanding subsystem reads `tools.media.models` from the config and invokes whisper-cli for voice messages.
 
 ### How It Works
 
 ```
-Telegram voice message → Gateway downloads audio → whisper-cli transcribes → text returned to agent
+Telegram voice message → Gateway downloads .ogg → ffmpeg converts → whisper-cli transcribes → text fed to agent
 ```
 
 ### NixOS Options
@@ -27,41 +27,45 @@ Telegram voice message → Gateway downloads audio → whisper-cli transcribes �
 | `base` | ~0.7x real-time | ~1GB | Commands + sentences (default) |
 | `small` | ~2-3x real-time | ~2GB | Best accuracy, slow |
 
-### Gateway Config (generated)
+### Gateway Config (injected via ExecStartPre)
 
-```json
-{
-  "audio": {
-    "transcription": {
-      "command": ["whisper-cli", "-m", "/nix/store/...-ggml-base.bin", "-l", "auto", "-np", "--no-gpu"],
-      "timeoutSeconds": 60
-    }
-  }
-}
-```
-
-### Files
-
-- `modules/clawpi.nix` — NixOS options + whisper-cpp system package
-- `home/openclaw.nix` — wires `audio.transcription` into gateway config
-- `pkgs/whisper-model.nix` — fetches GGML model from HuggingFace
-- `overlays/clawpi.nix` — exposes `whisper-model` package
-
-## Future: Groq Cloud Transcription
-
-The pinned OpenClaw version (schema rev `addd290f`) does not support provider-based `tools.media.audio.models` config. Once updated, Groq's Whisper API could replace local transcription for faster results:
+The typed Nix config schema doesn't expose `tools.media.models`, so the config is patched at service start via `jq`. See `docs/workarounds.md` for details.
 
 ```json
 {
   "tools": {
     "media": {
-      "audio": {
-        "enabled": true,
-        "models": [{ "provider": "groq", "model": "whisper-large-v3", "keyFile": "/var/lib/clawpi/groq-api-key" }]
-      }
+      "audio": { "language": "auto" },
+      "models": [
+        {
+          "type": "cli",
+          "provider": "whisper.cpp",
+          "id": "whisper-base",
+          "command": "/nix/store/...-whisper-cpp/bin/whisper-cli",
+          "args": ["-m", "/nix/store/...-ggml-base.bin", "-l", "auto", "-np", "--no-gpu"],
+          "capabilities": ["audio"],
+          "timeoutSeconds": 60
+        }
+      ]
     }
   }
 }
 ```
 
-A Groq API key is already provisioned on the Pi at `/var/lib/clawpi/groq-api-key`.
+### System Dependencies
+
+When `audio.enable = true`, these packages are added:
+- `whisper-cpp` — transcription engine
+- `file` — MIME type detection (used by gateway)
+- `ffmpeg-headless` — audio format conversion (Telegram sends .ogg/opus)
+
+### Files
+
+- `modules/clawpi.nix` — NixOS options + system packages
+- `home/openclaw.nix` — ExecStartPre config patch + whisper model wiring
+- `pkgs/whisper-model.nix` — fetches GGML model from HuggingFace
+- `overlays/clawpi.nix` — exposes `whisper-model` package
+
+## Future: Groq Cloud Transcription
+
+A Groq API key is provisioned on the Pi at `/var/lib/clawpi/groq-api-key`. Once the nix-openclaw schema is updated to expose `tools.media.models` as a typed option, Groq can be added as an alternative provider alongside or instead of local whisper.
