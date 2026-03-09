@@ -45,6 +45,25 @@ Position ClawPi as a proof of concept for a new generation of AI-powered smart a
 
 Be upfront that Raspberry Pi hardware is great for prototyping but likely not the right choice for production IoT deployments (reliability, supply chain, enterprise support). We'll add links to proper production-grade hardware platforms (e.g. industrial ARM SBCs, thin clients) once we've evaluated options.
 
+## Node Mode (Remote Gateway)
+
+Currently ClawPi runs in **gateway mode** — the full OpenClaw gateway runs locally on the Pi and the device is self-contained. We could also support a **node mode** where the Pi acts as a thin node that connects to a remote gateway hosted elsewhere (e.g. a VPS on Hetzner/Hostinger, a Kubernetes cluster, a home server).
+
+In node mode the Pi would only run:
+- The kiosk browser (labwc + Chromium)
+- The ClawPi overlay daemon (eww)
+- The `clawpi-tools` plugin (audio, display control)
+- A node agent that registers with the remote gateway over WebSocket
+
+The gateway itself — including the AI model orchestration, session management, and channel integrations (Telegram, etc.) — would live on the remote server. This decouples compute from the display device, which enables:
+
+- **Multiple displays, one brain** — several Pi nodes sharing a single gateway, each with its own browser and tools but coordinated by the same agent
+- **Stronger hardware for the gateway** — run the gateway on a beefy server with GPU access for local models, while the Pi stays a lightweight display terminal
+- **Cloud-hosted gateway** — run on managed infrastructure (k8s, Fly.io, Railway) with proper monitoring, scaling, and uptime guarantees
+- **NAT traversal** — node connects outbound to the gateway, so the Pi doesn't need a public IP or port forwarding
+
+**NixOS integration:** Expose as a `services.clawpi.mode` option (`"gateway"` | `"node"`) with a `services.clawpi.remoteGateway.url` for node mode. In gateway mode the config stays as-is. In node mode, skip the local gateway service and point the node agent at the remote URL.
+
 ## Project Name
 
 ~~Find a proper name for the project.~~ ✅ **Done** — the project is now called **ClawPi**.
