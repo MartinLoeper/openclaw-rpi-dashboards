@@ -46,8 +46,10 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
   readlink /run/current-system
   # If cage-tty1.service is not running, the kiosk spec wasn't activated:
   ssh nixos@<host> sudo systemctl status cage-tty1
-  # Manually activate the kiosk specialisation:
-  ssh nixos@<host> "sudo \$(readlink /nix/var/nix/profiles/system)/specialisation/kiosk/bin/switch-to-configuration switch"
+  # Manually activate the kiosk specialisation (use -f to resolve the full absolute path):
+  ssh nixos@<host> "sudo \$(readlink -f /nix/var/nix/profiles/system)/specialisation/kiosk/bin/switch-to-configuration switch"
+  # Then restart cage since switch-to-configuration skips it:
+  ssh nixos@<host> sudo systemctl restart cage-tty1
   ```
 - **File structure:**
   - `modules/base.nix` — system config (boot, users, networking, PipeWire, Avahi, SSH)
