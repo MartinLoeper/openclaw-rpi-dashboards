@@ -149,7 +149,7 @@ in
       environment.systemPackages = [ pkgs.alsa-utils ];
     })
     (lib.mkIf cfg.audio.enable {
-      environment.systemPackages = [ pkgs.whisper-cpp ];
+      environment.systemPackages = [ pkgs.whisper-cpp pkgs.file pkgs.ffmpeg-headless ];
     })
   ];
 }
