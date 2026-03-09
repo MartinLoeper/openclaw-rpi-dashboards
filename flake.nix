@@ -74,5 +74,16 @@
 
       installerImages.rpi5 =
         self.nixosConfigurations.rpi5-installer.config.system.build.sdImage;
+
+      devShells.x86_64-linux.default =
+        let
+          pkgs = import nixos-raspberrypi.inputs.nixpkgs { system = "x86_64-linux"; };
+          python = pkgs.python3.withPackages (p: [ p.websockets ]);
+          screenshot = pkgs.writeShellScriptBin "clawpi-screenshot" ''
+            ${python}/bin/python3 ${./scripts/screenshot.py} "$@"
+          '';
+        in pkgs.mkShell {
+          packages = [ python screenshot ];
+        };
     };
 }
