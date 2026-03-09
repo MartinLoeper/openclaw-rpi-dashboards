@@ -89,7 +89,8 @@ Captures the full compositor output including Chromium, Eww overlays, and any ot
 
 ```sh
 # Capture on the Pi and copy to local machine in one step
-ssh nixos@<host> "sudo -u kiosk XDG_RUNTIME_DIR=/run/user/\$(id -u kiosk) WAYLAND_DISPLAY=wayland-0 grim /tmp/wayland-screenshot.png" && \
+# Note: sudo -u doesn't load the kiosk profile PATH, so use the full path to grim
+ssh nixos@<host> "sudo -u kiosk XDG_RUNTIME_DIR=/run/user/\$(id -u kiosk) WAYLAND_DISPLAY=wayland-0 /etc/profiles/per-user/kiosk/bin/grim /tmp/wayland-screenshot.png" && \
 scp nixos@<host>:/tmp/wayland-screenshot.png /tmp/clawpi-wayland-screenshot.png
 ```
 
