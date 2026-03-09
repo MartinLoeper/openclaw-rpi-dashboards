@@ -13,6 +13,7 @@
           kiosk = {
             cdpUrl = "http://127.0.0.1:9222";
             driver = "openclaw";
+            color = "#FF4500";
           };
         };
       };
