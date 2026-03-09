@@ -1,10 +1,11 @@
 package gateway
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -39,26 +40,18 @@ func (c *Client) Run() error {
 }
 
 func (c *Client) connect() error {
-	header := http.Header{}
-	header.Set("Authorization", fmt.Sprintf("Bearer %s", c.token))
-
 	wsURL := fmt.Sprintf("%s/?clientId=gateway-client&clientMode=gateway-client", c.url)
 	log.Printf("connecting to %s", c.url)
 
-	conn, _, err := websocket.DefaultDialer.Dial(wsURL, header)
+	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
 	if err != nil {
 		return fmt.Errorf("dial: %w", err)
 	}
 	defer conn.Close()
 
-	log.Printf("connected to gateway")
+	log.Printf("connected, waiting for challenge...")
 
-	// Set up ping/pong for connection health
-	conn.SetPongHandler(func(string) error {
-		return nil
-	})
-
-	// Start a goroutine to send periodic pings
+	// Start periodic pings
 	done := make(chan struct{})
 	defer close(done)
 	go func() {
@@ -68,7 +61,6 @@ func (c *Client) connect() error {
 			select {
 			case <-ticker.C:
 				if err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(10*time.Second)); err != nil {
-					log.Printf("ping failed: %v", err)
 					return
 				}
 			case <-done:
@@ -76,6 +68,8 @@ func (c *Client) connect() error {
 			}
 		}
 	}()
+
+	authenticated := false
 
 	for {
 		_, data, err := conn.ReadMessage()
@@ -86,6 +80,50 @@ func (c *Client) connect() error {
 		var msg GatewayMessage
 		if err := json.Unmarshal(data, &msg); err != nil {
 			log.Printf("unmarshal error: %v | raw: %s", err, truncate(string(data), 200))
+			continue
+		}
+
+		// Handle connect.challenge — respond with auth token
+		if msg.Event == "connect.challenge" && !authenticated {
+			var challenge ChallengePayload
+			if err := json.Unmarshal(msg.Payload, &challenge); err != nil {
+				log.Printf("failed to parse challenge payload: %v", err)
+				continue
+			}
+
+			log.Printf("received challenge (nonce=%s), authenticating...", truncate(challenge.Nonce, 16))
+
+			connectReq := ConnectRequest{
+				Type:   "req",
+				ID:     randomID(),
+				Method: "connect",
+				Params: ConnectParams{
+					MinProtocol: 3,
+					MaxProtocol: 3,
+					Client: ConnectClient{
+						ID:       "gateway-client",
+						Version:  "0.1.0",
+						Platform: "linux",
+						Mode:     "backend",
+					},
+					Caps:   []string{"tool-events"},
+					Auth:   &ConnectAuth{Token: c.token},
+					Role:   "operator",
+					Scopes: []string{"operator.admin"},
+				},
+			}
+
+			reqData, err := json.Marshal(connectReq)
+			if err != nil {
+				return fmt.Errorf("marshal connect request: %w", err)
+			}
+
+			if err := conn.WriteMessage(websocket.TextMessage, reqData); err != nil {
+				return fmt.Errorf("send connect request: %w", err)
+			}
+
+			authenticated = true
+			log.Printf("connect request sent")
 			continue
 		}
 
@@ -101,12 +139,21 @@ func logMessage(msg *GatewayMessage, raw []byte) {
 	if len(msg.Data) > 0 {
 		dataStr = truncate(string(msg.Data), 300)
 	}
+	if dataStr == "" && len(msg.Payload) > 0 {
+		dataStr = truncate(string(msg.Payload), 300)
+	}
 
 	if dataStr != "" {
 		log.Printf("[event] %s data=%s", fields, dataStr)
 	} else {
-		log.Printf("[event] %s", fields)
+		log.Printf("[event] %s | raw=%s", fields, truncate(string(raw), 500))
 	}
+}
+
+func randomID() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return hex.EncodeToString(b)
 }
 
 func truncate(s string, maxLen int) string {

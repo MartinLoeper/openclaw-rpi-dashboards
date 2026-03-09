@@ -34,6 +34,7 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
 - **Always** pass `--show-trace -L` (or `--print-build-logs`) to `nix build` commands so build progress is visible.
 - **Never** use `| tail`, `| head`, `2>&1 | tail`, or any output filtering on build commands. This is the number one cause of builds appearing to hang.
 - When running builds in background tasks, the full output must stream to the task output file unfiltered.
+- **Run `nix build` and deploy commands in the background by default** (using `run_in_background: true, timeout: 600000`). These are long-running operations — don't block the conversation on them.
 
 ## Architecture
 
