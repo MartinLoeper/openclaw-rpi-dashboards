@@ -1,3 +1,9 @@
+---
+name: hetzner-builder
+description: Spin up a native aarch64 build server on Hetzner Cloud to avoid slow cross-compilation from x86_64. Use when building the NixOS configuration takes too long locally, packages aren't in the binary cache, or you need a native ARM build.
+user-invocable: false
+---
+
 # Hetzner ARM Builder
 
 Spin up a native aarch64 build server on Hetzner Cloud to avoid slow cross-compilation from x86_64.
