@@ -126,6 +126,22 @@ sudo /run/current-system/bin/switch-to-configuration switch
 
 See [docs/canvas.md](docs/canvas.md) for the full design rationale.
 
+## PinchChat (Web UI)
+
+[PinchChat](https://github.com/MarlBurroW/pinchchat) provides a webchat interface for interacting with the OpenClaw gateway from your workstation. It connects via WebSocket through an SSH tunnel.
+
+```sh
+# Set up SSH tunnel to the gateway
+ssh -i id_ed25519_rpi5 -L 18789:127.0.0.1:18789 -N nixos@openclaw-rpi5.local
+
+# Run PinchChat
+docker run -d --name pinchchat -p 3000:80 \
+  -e VITE_GATEWAY_WS_URL=ws://localhost:18789 \
+  ghcr.io/marlburrow/pinchchat:latest
+```
+
+Open `http://localhost:3000` and enter the gateway token (retrieve with `./scripts/gateway-token.sh`).
+
 ## Documentation
 
 Additional design docs and integration guides live in [`docs/`](docs/).

@@ -75,6 +75,24 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
   ```
   Then open `http://localhost:18789` locally.
 
+## PinchChat (Web UI)
+
+[PinchChat](https://github.com/MarlBurroW/pinchchat) is a webchat UI for interacting with the OpenClaw gateway from your workstation.
+
+```sh
+# 1. Set up SSH tunnel to the gateway
+ssh -i id_ed25519_rpi5 -L 18789:127.0.0.1:18789 -N nixos@<host>
+
+# 2. Run PinchChat
+docker run -d --name pinchchat -p 3000:80 \
+  -e VITE_GATEWAY_WS_URL=ws://localhost:18789 \
+  ghcr.io/marlburrow/pinchchat:latest
+
+# 3. Open http://localhost:3000 and enter the gateway token
+```
+
+Retrieve the token with `./scripts/gateway-token.sh`.
+
 ## Writing Skills and Agent Instructions
 
 - Skills (`.claude/skills/`) and CLAUDE.md must be **generic** — no user-specific paths, credentials, CLI wrappers, or machine-specific details.
