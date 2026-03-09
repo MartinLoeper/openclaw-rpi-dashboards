@@ -2,9 +2,12 @@
   xdg.configFile."labwc/autostart" = {
     executable = true;
     text = ''
-      # Notify systemd that the graphical session is up
+      # Export WAYLAND_DISPLAY so user services can connect to the compositor
       systemctl --user import-environment WAYLAND_DISPLAY
-      systemctl --user start graphical-session.target
+
+      # Start the graphical session marker service, which pulls in
+      # graphical-session.target and all services that depend on it
+      systemctl --user start labwc-session.service
 
       # Wait for PipeWire socket (HDMI audio)
       socket="/run/user/$(id -u)/pipewire-0"
@@ -24,6 +27,21 @@
         --remote-debugging-port=9222 \
         http://localhost:3100 &
     '';
+  };
+
+  # Marker service that binds to graphical-session.target.
+  # Starting this service activates the target (bypasses RefuseManualStart).
+  systemd.user.services.labwc-session = {
+    Unit = {
+      Description = "labwc graphical session";
+      BindsTo = [ "graphical-session.target" ];
+      After = [ "graphical-session-pre.target" ];
+    };
+    Service = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.coreutils}/bin/true";
+    };
   };
 
   xdg.configFile."labwc/rc.xml".text = ''
