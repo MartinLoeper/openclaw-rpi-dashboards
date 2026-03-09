@@ -29,6 +29,12 @@ Add a catchy tagline to the README that sells the vision, something like:
 
 Position the project as a truly intelligent home assistant: not a canned voice skill platform, but a real AI agent with eyes (display + browser), ears (mic), voice (speakers), and hands (GPIO/peripherals) — running on your own hardware with full control.
 
+## Dashboard & Diagram Design
+
+Teach the agent to:
+- **Datadog dashboards** — design and build monitoring dashboards via the Datadog UI in the kiosk browser, arranging widgets, setting queries, and configuring alerts visually.
+- **Excalidraw diagrams** — draw architecture diagrams, flowcharts, and whiteboard sketches directly in Excalidraw running in the kiosk browser, using the browser tool to interact with the canvas.
+
 ## Audio I/O
 
 Teach the agent to use the microphone and speakers attached to the Pi via PipeWire. This enables voice interaction, playing audio feedback, text-to-speech, or listening for voice commands. The agent should know how to use tools like `arecord`/`aplay`, `pw-play`/`pw-record`, or browser Web Audio APIs to capture and produce sound.
