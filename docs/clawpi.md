@@ -86,8 +86,8 @@ High-quality text-to-speech via the ElevenLabs cloud API. When enabled, the `tts
 |--------|------|---------|-------------|
 | `services.clawpi.elevenlabs.enable` | bool | `false` | Enable the `tts_hq` tool (ElevenLabs cloud TTS) |
 | `services.clawpi.elevenlabs.apiKeyFile` | path | `/var/lib/clawpi/elevenlabs-api-key` | Path to ElevenLabs API key. Provision with `./scripts/provision-elevenlabs.sh` |
-| `services.clawpi.elevenlabs.voice` | string | `"JBFqnCBsd6RMkjVDRZzb"` (George) | Default ElevenLabs voice ID |
-| `services.clawpi.elevenlabs.model` | string | `"eleven_multilingual_v2"` | Default ElevenLabs model ID |
+| `services.clawpi.elevenlabs.voice` | string | `"eokb0hhuVX3JuAiUKucB"` | Default ElevenLabs voice ID |
+| `services.clawpi.elevenlabs.model` | string | `"eleven_v3"` | Default ElevenLabs model ID |
 
 ## Overlay Daemon
 

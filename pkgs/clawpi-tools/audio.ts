@@ -416,8 +416,8 @@ export default function (api: any) {
 
   // ── TTS: high-quality via ElevenLabs ─────────────────────────────
   const ELEVENLABS_KEY_FILE = process.env.CLAWPI_ELEVENLABS_API_KEY_FILE;
-  const ELEVENLABS_DEFAULT_VOICE = process.env.CLAWPI_ELEVENLABS_VOICE ?? "JBFqnCBsd6RMkjVDRZzb";
-  const ELEVENLABS_DEFAULT_MODEL = process.env.CLAWPI_ELEVENLABS_MODEL ?? "eleven_multilingual_v2";
+  const ELEVENLABS_DEFAULT_VOICE = process.env.CLAWPI_ELEVENLABS_VOICE ?? "eokb0hhuVX3JuAiUKucB";
+  const ELEVENLABS_DEFAULT_MODEL = process.env.CLAWPI_ELEVENLABS_MODEL ?? "eleven_v3";
 
   if (ELEVENLABS_KEY_FILE) {
     const keyFile = ELEVENLABS_KEY_FILE;

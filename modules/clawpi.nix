@@ -90,20 +90,17 @@ in
 
       voice = lib.mkOption {
         type = lib.types.str;
-        default = "JBFqnCBsd6RMkjVDRZzb";
+        default = "eokb0hhuVX3JuAiUKucB";
         description = ''
           Default ElevenLabs voice ID.
-          George (JBFqnCBsd6RMkjVDRZzb), Rachel (21m00Tcm4TlvDq8ikWAM),
-          Domi (AZnzlk1XvdvUeBnXmlld), Bella (EXAVITQu4vr4xnSDxMaL).
         '';
       };
 
       model = lib.mkOption {
         type = lib.types.str;
-        default = "eleven_multilingual_v2";
+        default = "eleven_v3";
         description = ''
           ElevenLabs model ID.
-          eleven_multilingual_v2 (best quality) or eleven_turbo_v2_5 (lower latency).
         '';
       };
     };
