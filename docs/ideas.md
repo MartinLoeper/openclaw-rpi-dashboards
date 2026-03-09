@@ -120,6 +120,17 @@ Give the agent the ability to email the user — e.g. "email me a summary of thi
 
 Write a `scripts/spec-select.sh` script that lets the user pick the active NixOS specialisation (or base CLI mode) on the device using a nice TUI powered by [gum](https://github.com/charmbracelet/gum). The script SSHs into the Pi, lists available specialisations, presents a `gum choose` menu, activates the selected one via `switch-to-configuration`, and restarts the relevant services (Cage, gateway). This replaces the current manual `readlink -f` + `switch-to-configuration` dance with a single command.
 
+## Browser Mode Switching
+
+Give the agent a tool to restart the kiosk browser in different modes:
+
+- **App mode** (current default) — `--app=URL`, no tabs, no address bar, cleanest look for dashboards and single-page content
+- **Browse mode** — drop `--app`, launch with `--start-fullscreen` instead, giving the user a traditional browsing experience with tabs, address bar, and navigation controls
+
+The agent should be able to switch modes on demand ("let me browse freely", "go back to kiosk mode") by restarting Cage with the appropriate Chromium flags. This could be a systemd override or a script that rewrites the Cage `ExecStart` and restarts the service. The mode switch should preserve the current URL so the user doesn't lose their place.
+
+**Important:** In `--app` mode, the agent must use the browser `navigate` action (CDP `Page.navigate`) instead of `open` to change pages. Using `open` spawns a new browser window that stacks on top of the existing app window inside Cage, which is not recoverable without restarting. The seeded agent personality / system prompt should explicitly instruct: "You are in app mode — always navigate, never open new windows."
+
 ## Real Fullscreen in Chrome
 
 The current `--kiosk` and `--start-fullscreen` flags don't fully eliminate window decorations inside Cage. Investigate proper fullscreen — possibly via Cage `-d` flag (already added), Chromium `--app` mode, or launching Chromium without a window manager entirely. Goal: zero chrome, zero borders, just content edge-to-edge.
