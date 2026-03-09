@@ -18,11 +18,4 @@ let
   });
 in {
   openclaw-gateway = fixLongDep prev.openclaw-gateway;
-
-  # The openclaw batteries package bundles its own reference to openclaw-gateway
-  # via prev (not final), so patching openclaw-gateway alone doesn't help.
-  # Override openclaw to swap in the patched gateway.
-  openclaw = prev.openclaw.override {
-    openclaw-gateway = final.openclaw-gateway;
-  };
 }
