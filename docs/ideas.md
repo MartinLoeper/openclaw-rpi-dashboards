@@ -29,6 +29,16 @@ Add a catchy tagline to the README that sells the vision, something like:
 
 Position the project as a truly intelligent home assistant: not a canned voice skill platform, but a real AI agent with eyes (display + browser), ears (mic), voice (speakers), and hands (GPIO/peripherals) — running on your own hardware with full control.
 
+## README: Advertise NixOS + Remote Building
+
+Highlight in the README that we use NixOS for fully reproducible deployments — the exact same system can be built from source by anyone, anywhere. Also advertise the Hetzner ARM remote build infrastructure:
+
+- **NixOS reproducibility** — declarative config, no snowflake setups, rollback to any previous generation
+- **Remote ARM builds** — avoid slow cross-compilation on x86_64 by offloading to native aarch64 Hetzner Cloud servers. A dedicated Claude skill (`hetzner-builder`) automates spinning up a build server, building, caching, and tearing down
+- **Binary cache integration** — pre-built closures can be copied from the build server to the Pi in seconds
+
+This is a real differentiator vs. Raspberry Pi projects that rely on manual `apt install` and can't reproduce their setup.
+
 ## Speech Bubble Overlay via Eww
 
 Use [Eww](https://github.com/elkowar/eww) to overlay brief agent messages directly on screen in a speech bubble style — a lightweight alternative to TTS that costs fewer tokens. The agent writes short, direct status updates or responses to a file/socket, and an Eww widget renders them as a floating bubble on top of the kiosk browser. Cheaper and faster than generating audio, and works well on the small 10" display where brevity is key.
