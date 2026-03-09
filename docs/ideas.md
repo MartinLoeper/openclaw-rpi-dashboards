@@ -192,11 +192,124 @@ Set up a [Cachix](https://www.cachix.org/) cache for the project so community us
 
 ## Developer Machine Prerequisites
 
-Document the required setup on the developer's workstation before they can build, flash, or deploy. The README currently assumes a working Nix environment but doesn't spell out all the pieces:
+~~Document the required setup on the developer's workstation.~~ **Done** — see `docs/getting-started.md`.
 
-- **Nix daemon** — multi-user Nix installation with the daemon running (`nix-daemon.service`)
-- **Flakes enabled** — `experimental-features = nix-command flakes` in `nix.conf`
-- **aarch64 emulation** — `boot.binfmt.emulatedSystems = [ "aarch64-linux" ]` (already mentioned, but should be part of a unified prerequisites section)
-- **Disk space** — cross-compiled closures are large; document a rough minimum (e.g. ~20 GB free in `/nix/store`)
-- **SSH** — `ssh` client for deploys, `ssh-copy-id` for initial key setup
-- **Optional tools** — `bmaptool` for fast flashing, Docker for PinchChat / agent tools
+## Interaction Channels Overview
+
+ClawPi supports multiple ways to interact with the agent, each suited to different situations:
+
+| Channel | Location | Input | Best For |
+|---------|----------|-------|----------|
+| **Voice (hotword)** | At the display | Speak "hey claw" + command | Hands-free, quick commands while nearby |
+| **PinchChat** | Laptop browser | Type in web UI | Extended sessions, copy-paste, comfortable typing |
+| **Gateway direct** | Laptop browser | Type in gateway web UI | Developer access, no Docker needed |
+| **Telegram** | Phone (mobile) | Text or voice messages | Remote control from anywhere, on the go |
+
+### Voice (at the display)
+
+The primary hands-free channel. Say the wake word ("hey claw"), speak your command, and the agent acts. See `docs/voice-pipeline.md` for the full design. Requires a USB microphone.
+
+### PinchChat (laptop)
+
+A webchat UI running in Docker on your workstation, connected to the gateway via SSH tunnel. Good for longer interactions where typing is more comfortable. See `docs/deployment.md` for setup.
+
+### Gateway Web UI (laptop)
+
+Open the gateway directly at `http://localhost:18789` (via SSH tunnel). No Docker required — just a browser. Gives full access to the agent session the kiosk display is also connected to.
+
+### Telegram (mobile)
+
+Send text or voice messages from your phone via a Telegram bot. The most convenient remote channel — no SSH, no local network, works from anywhere. Voice messages are transcribed on the Pi using whisper.cpp before being sent to the agent.
+
+## Telegram Bot Integration
+
+Give the user a way to interact with the OpenClaw agent from their phone via a Telegram bot. This is the most convenient remote channel — no SSH tunnels, no laptop, just open Telegram and type (or send a voice message).
+
+### Architecture
+
+```
+Phone (Telegram) → Telegram Bot API → telegram-bridge service (on Pi) → OpenClaw Gateway (localhost:18789)
+                                                                      ↕
+                                                              Agent responds
+```
+
+A small **telegram-bridge** service runs on the Pi as a systemd service. It polls the Telegram Bot API (long polling, no webhook needed — avoids exposing the Pi to the internet), receives messages, forwards them to the gateway WebSocket, and relays agent responses back to the Telegram chat.
+
+### Setup Guide: Creating the Telegram Bot
+
+1. Open Telegram and search for **@BotFather**
+2. Send `/newbot` and follow the prompts:
+   - **Name:** e.g. `ClawPi Dashboard` (display name, can contain spaces)
+   - **Username:** e.g. `clawpi_dashboard_bot` (must end in `bot`, globally unique)
+3. BotFather returns a **bot token** — copy it (format: `123456789:ABCdef...`)
+4. Optionally configure the bot via BotFather:
+   - `/setdescription` — e.g. "AI dashboard assistant running on a Raspberry Pi"
+   - `/setabouttext` — brief description shown on the bot's profile
+   - `/setuserpic` — upload a ClawPi logo
+   - `/setcommands` — register slash commands (e.g. `/screenshot`, `/status`)
+5. **Get your chat ID:** Send any message to the bot, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` in a browser. Find your `chat.id` in the JSON response. This restricts the bot to only respond to you.
+
+### NixOS Module Options
+
+The Telegram bridge is configured via a dedicated NixOS module:
+
+```nix
+services.clawpi.telegram = {
+  enable = true;
+
+  # Bot token from BotFather (stored in a secrets file, not in the Nix store)
+  tokenFile = "/var/lib/clawpi/telegram-bot-token";
+
+  # Restrict to specific Telegram chat IDs (security: ignore messages from strangers)
+  allowedChatIds = [ 123456789 ];
+
+  # Gateway connection (defaults should work out of the box)
+  gateway.url = "ws://localhost:18789";
+  gateway.tokenFile = "/var/lib/kiosk/.openclaw/gateway-token.env";
+
+  # Voice message transcription (uses whisper.cpp on the Pi)
+  voice = {
+    enable = true;
+    # whisper model size: "tiny", "base", "small"
+    model = "base";
+  };
+};
+```
+
+#### Option reference
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enable` | bool | `false` | Enable the Telegram bridge service |
+| `tokenFile` | path | — | Path to a file containing the bot token (one line, no newline) |
+| `allowedChatIds` | list of int | `[]` | Telegram chat IDs allowed to interact with the bot. Empty = reject all. |
+| `gateway.url` | string | `"ws://localhost:18789"` | Gateway WebSocket URL |
+| `gateway.tokenFile` | path | `"/var/lib/kiosk/.openclaw/gateway-token.env"` | Path to the gateway auth token file |
+| `voice.enable` | bool | `false` | Transcribe incoming Telegram voice messages using whisper.cpp |
+| `voice.model` | enum | `"base"` | Whisper model size (`"tiny"`, `"base"`, `"small"`) |
+
+### Voice Message Support
+
+When `voice.enable = true`, the bridge downloads incoming Telegram voice messages (`.ogg`), converts them to WAV via `ffmpeg`, and runs whisper.cpp to produce a text transcript. The transcript is then sent to the agent as a regular text message. This makes it easy to talk to the agent from your phone without typing — just hold the mic button in Telegram and speak.
+
+The whisper model is shared with the voice pipeline module (see `docs/voice-pipeline.md`). If both are enabled, they use the same model files to avoid duplication.
+
+### Security
+
+- **Chat ID allowlist** — the bot ignores messages from any chat ID not in `allowedChatIds`. This is critical: without it, anyone who discovers the bot username can send commands to your agent.
+- **Token as file** — the bot token is read from a file at runtime, not embedded in the Nix configuration. This keeps it out of the Nix store (which is world-readable).
+- **No webhook** — long polling means the Pi doesn't need to be reachable from the internet. The bridge makes outbound HTTPS connections to the Telegram API only.
+
+### Quick Start
+
+```sh
+# 1. Create the bot via @BotFather (see above) and note the token
+
+# 2. Write the token to a file on the Pi
+ssh nixos@openclaw-rpi5.local "echo '<bot-token>' | sudo tee /var/lib/clawpi/telegram-bot-token > /dev/null"
+
+# 3. Add to your NixOS config and deploy
+#    (set allowedChatIds to your Telegram chat ID)
+
+# 4. Send a message to your bot — the agent responds!
+```
