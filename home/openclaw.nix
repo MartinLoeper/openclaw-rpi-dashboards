@@ -6,6 +6,21 @@ let
 
   whisperModel = pkgs.whisper-model.override { model = audioCfg.model; };
 
+  # Wrapper that converts any audio format to WAV (16kHz mono) before
+  # passing it to whisper-cli.  Telegram sends .ogg/opus which whisper-cli
+  # cannot read directly.
+  whisperWrapper = pkgs.writeShellScript "whisper-transcribe" ''
+    input="$1"
+    wav="''${input%.*}.wav"
+    ${pkgs.ffmpeg-headless}/bin/ffmpeg -y -i "$input" -ar 16000 -ac 1 -c:a pcm_s16le "$wav" 2>/dev/null
+    ${pkgs.whisper-cpp}/bin/whisper-cli \
+      -m "${whisperModel}" \
+      -l "${audioCfg.language}" \
+      -np --no-gpu \
+      "$wav"
+    rm -f "$wav"
+  '';
+
   # JSON snippet to inject tools.media config for whisper-cli transcription.
   # The typed Nix config schema doesn't expose tools.media.models, so we
   # patch openclaw.json via ExecStartPre before the gateway reads it.
@@ -16,12 +31,8 @@ let
       models = [
         {
           type = "cli";
-          command = "${pkgs.whisper-cpp}/bin/whisper-cli";
+          command = "${whisperWrapper}";
           args = [
-            "-m" "${whisperModel}"
-            "-l" audioCfg.language
-            "-np"
-            "--no-gpu"
             "{{MediaPath}}"
           ];
           timeoutSeconds = audioCfg.timeoutSeconds;
