@@ -28,14 +28,19 @@ if [ -z "${API_KEY}" ]; then
   exit 1
 fi
 
-AUTH_DIR="/var/lib/kiosk/.openclaw/agents/main/agent"
-AUTH_JSON="{\"default\":{\"provider\":\"anthropic\",\"apiKey\":\"${API_KEY}\"}}"
+AUTH_JSON=$(cat <<EOF
+{"version":1,"profiles":{"anthropic:default":{"type":"api_key","provider":"anthropic","key":"${API_KEY}"}}}
+EOF
+)
 
+# Write to both the main agent dir and the default (global fallback) agent dir.
 # shellcheck disable=SC2086
 ssh ${SSH_OPTS} "${TARGET_USER}@${TARGET_HOST}" "
-  sudo mkdir -p '${AUTH_DIR}'
-  echo '${AUTH_JSON}' | sudo tee '${AUTH_DIR}/auth-profiles.json' > /dev/null
-  sudo chmod 600 '${AUTH_DIR}/auth-profiles.json'
+  for dir in /var/lib/kiosk/.openclaw/agents/main/agent /var/lib/kiosk/.openclaw/agents/default/agent; do
+    sudo mkdir -p \"\$dir\"
+    echo '${AUTH_JSON}' | sudo tee \"\$dir/auth-profiles.json\" > /dev/null
+    sudo chmod 600 \"\$dir/auth-profiles.json\"
+  done
   sudo chown -R kiosk:kiosk /var/lib/kiosk/.openclaw/agents
 "
 
