@@ -35,11 +35,11 @@ in
 
       model = lib.mkOption {
         type = lib.types.enum [ "tiny" "base" "small" ];
-        default = "base";
+        default = "tiny";
         description = ''
           Whisper model size. Trade-offs on RPi 5:
-          - tiny:  fast (~0.3x real-time), lower accuracy
-          - base:  balanced (~0.7x real-time), good for commands + sentences
+          - tiny:  fast (~0.3x real-time), good enough for voice commands
+          - base:  balanced (~0.7x real-time), better accuracy
           - small: slow (~2-3x real-time), best accuracy
         '';
       };

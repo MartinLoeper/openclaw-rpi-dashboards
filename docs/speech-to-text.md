@@ -17,7 +17,7 @@ The gateway passes the audio file path via `{{MediaPath}}` template substitution
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `services.clawpi.audio.enable` | bool | `false` | Enable audio transcription |
-| `services.clawpi.audio.model` | enum | `"base"` | Whisper model: `tiny`, `base`, `small` |
+| `services.clawpi.audio.model` | enum | `"tiny"` | Whisper model: `tiny`, `base`, `small` |
 | `services.clawpi.audio.language` | string | `"auto"` | Language code or `"auto"` |
 | `services.clawpi.audio.timeoutSeconds` | int | `60` | Transcription timeout |
 
@@ -27,14 +27,14 @@ All models use the same architecture, scaled by parameter count. We use the mult
 
 | Model | Params | Download | RPi 5 Speed | RAM | Notes |
 |-------|--------|----------|-------------|-----|-------|
-| **tiny** | 39M | 75 MB | ~0.3x real-time | ~1 GB | Fastest, good for short English commands |
-| **base** | 74M | 142 MB | ~0.7x real-time | ~1 GB | **Default.** Best balance of speed and accuracy |
+| **tiny** | 39M | 75 MB | ~0.3x real-time | ~1 GB | **Default.** Fastest, good for voice commands |
+| **base** | 74M | 142 MB | ~0.7x real-time | ~1 GB | Best balance of speed and accuracy |
 | **small** | 244M | 466 MB | ~2-3x real-time | ~2 GB | Better multilingual accuracy |
 | medium | 769M | 1.5 GB | ~5x real-time | ~3 GB | High accuracy, too slow for interactive use |
 | large-v3 | 1.5B | 2.9 GB | Impractical | ~5 GB | Best accuracy, won't fit comfortably on 8 GB Pi |
 | large-v3-turbo | 809M | 1.5 GB | ~5x real-time | ~3 GB | Large-v3 quality at medium size, still slow on Pi |
 
-**Why `base`:** The biggest quality jump is tiny to base. After that, returns diminish per parameter increase. `base` is near real-time on the RPi 5, handles both commands and conversational speech well, and fits comfortably in memory alongside the gateway and Chromium kiosk.
+**Why `tiny`:** Prioritizes low latency for interactive Telegram voice messages. `tiny` is ~3x faster than real-time on the RPi 5, which means near-instant transcription. All models are multilingual (using `ggml-<model>.bin` variants) so `auto` language detection works with any model. If accuracy is insufficient, switch to `base` — the biggest quality jump is tiny → base.
 
 Only `tiny`, `base`, and `small` are currently packaged in `pkgs/whisper-model.nix`. The larger models are feasible on the Pi (8 GB RAM) but impractical for interactive Telegram voice messages where response latency matters.
 
@@ -52,8 +52,8 @@ The typed Nix config schema doesn't expose `tools.media.audio.models`, so the co
         "models": [
           {
             "type": "cli",
-            "command": "/nix/store/...-whisper-cpp/bin/whisper-cli",
-            "args": ["-m", "/nix/store/...-ggml-base.bin", "-l", "auto", "-np", "--no-gpu", "{{MediaPath}}"],
+            "command": "/nix/store/...-whisper-transcribe",
+            "args": ["{{MediaPath}}"],
             "timeoutSeconds": 60
           }
         ]

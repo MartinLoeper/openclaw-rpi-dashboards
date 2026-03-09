@@ -17,8 +17,10 @@ let
       -m "${whisperModel}" \
       -l "${audioCfg.language}" \
       -np --no-gpu \
-      "$wav"
+      "$wav" 2>/dev/null
+    rc=$?
     rm -f "$wav"
+    exit $rc
   '';
 
   # JSON snippet to inject tools.media config for whisper-cli transcription.

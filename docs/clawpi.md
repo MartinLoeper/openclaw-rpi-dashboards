@@ -69,7 +69,7 @@ Speech-to-text via whisper.cpp for Telegram voice messages and future voice inpu
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `services.clawpi.audio.enable` | bool | `false` | Enable audio transcription via whisper.cpp |
-| `services.clawpi.audio.model` | enum | `"base"` | Whisper model size: `"tiny"` (fast, lower accuracy), `"base"` (balanced), `"small"` (slow, best accuracy) |
+| `services.clawpi.audio.model` | enum | `"tiny"` | Whisper model size: `"tiny"` (fast, default), `"base"` (balanced), `"small"` (slow, best accuracy) |
 | `services.clawpi.audio.language` | string | `"auto"` | Spoken language code (e.g. `"en"`, `"de"`) or `"auto"` for auto-detect |
 | `services.clawpi.audio.timeoutSeconds` | int | `60` | Timeout in seconds for transcription |
 
