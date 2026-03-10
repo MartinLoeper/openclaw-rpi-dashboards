@@ -113,10 +113,15 @@ class VoicePipeline:
         self._oww_model.predict(audio_int16)
 
         for model_name, scores in self._oww_model.prediction_buffer.items():
-            if len(scores) > 0 and scores[-1] >= self.cfg["threshold"]:
-                log.info("wake word detected: %s (score=%.3f)", model_name, scores[-1])
-                self._oww_model.reset()
-                return model_name
+            if len(scores) > 0:
+                score = scores[-1]
+                if score > 0.01:
+                    log.debug("wakeword score: %s=%.3f (threshold=%.2f)",
+                              model_name, score, self.cfg["threshold"])
+                if score >= self.cfg["threshold"]:
+                    log.info("wake word detected: %s (score=%.3f)", model_name, score)
+                    self._oww_model.reset()
+                    return model_name
         return None
 
     def _record_speech(self, pw_proc):
