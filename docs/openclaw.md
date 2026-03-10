@@ -53,17 +53,20 @@ Defaults to `openclaw-rpi5.local`. Pass an IP to override:
 
 The script prints the token and a ready-to-use dashboard URL with the token parameter.
 
-## Agent Auth (API Key)
+## Agent Auth (API Keys)
 
-The gateway requires an Anthropic API key to run agents. Configure it with:
+The gateway needs at least one LLM provider API key. Configure with:
 
 ```sh
 ./scripts/setup-agent-auth.sh [host]
 ```
 
-This prompts for an API key (obtain one via `claude setup-token` or from [console.anthropic.com](https://console.anthropic.com)), writes it to the agent auth profile on the Pi, and restarts the gateway.
+The script prompts for API keys from supported providers. Leave a field empty to skip that provider:
 
-The auth profile is stored at `~/.openclaw/agents/main/agent/auth-profiles.json`.
+- **Anthropic** — from `claude setup-token` or [console.anthropic.com](https://console.anthropic.com)
+- **OpenRouter** — from [openrouter.ai/keys](https://openrouter.ai/keys) (provides access to many models including Claude, GPT-4, Gemini, etc.)
+
+At least one provider is required. The auth profile is stored at `~/.openclaw/agents/main/agent/auth-profiles.json`.
 
 ## Kiosk User Design Decisions
 

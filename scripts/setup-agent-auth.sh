@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Configure the Anthropic API key for the OpenClaw gateway agent.
+# Configure LLM provider API keys for the OpenClaw gateway agent.
 #
 # Usage: ./scripts/setup-agent-auth.sh [host]
 #
-# The script prompts for an API key (from `claude setup-token` or the Anthropic console)
-# and writes it to the agent auth profile on the Pi.
+# Prompts for Anthropic and OpenRouter API keys. Leave blank to skip a provider.
+# Writes the auth profile to the Pi and restarts the gateway.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -21,17 +21,33 @@ fi
 SSH_OPTS="-i ${KEY_FILE} -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
 
 echo "Enter Anthropic API key (from 'claude setup-token' or console.anthropic.com):"
-read -rs API_KEY
+echo "(leave empty to skip)"
+read -rs ANTHROPIC_KEY
+echo ""
 
-if [ -z "${API_KEY}" ]; then
-  echo "Error: No API key provided."
+echo "Enter OpenRouter API key (from openrouter.ai/keys):"
+echo "(leave empty to skip)"
+read -rs OPENROUTER_KEY
+echo ""
+
+if [ -z "${ANTHROPIC_KEY}" ] && [ -z "${OPENROUTER_KEY}" ]; then
+  echo "Error: No API keys provided. At least one provider is required."
   exit 1
 fi
 
-AUTH_JSON=$(cat <<EOF
-{"version":1,"profiles":{"anthropic:default":{"type":"api_key","provider":"anthropic","key":"${API_KEY}"}}}
-EOF
-)
+# Build the profiles JSON dynamically
+PROFILES=""
+if [ -n "${ANTHROPIC_KEY}" ]; then
+  PROFILES="\"anthropic:default\":{\"type\":\"api_key\",\"provider\":\"anthropic\",\"key\":\"${ANTHROPIC_KEY}\"}"
+fi
+if [ -n "${OPENROUTER_KEY}" ]; then
+  if [ -n "${PROFILES}" ]; then
+    PROFILES="${PROFILES},"
+  fi
+  PROFILES="${PROFILES}\"openrouter:default\":{\"type\":\"api_key\",\"provider\":\"openrouter\",\"key\":\"${OPENROUTER_KEY}\"}"
+fi
+
+AUTH_JSON="{\"version\":1,\"profiles\":{${PROFILES}}}"
 
 # Write to both the main agent dir and the default (global fallback) agent dir.
 # shellcheck disable=SC2086
@@ -44,8 +60,12 @@ ssh ${SSH_OPTS} "${TARGET_USER}@${TARGET_HOST}" "
   sudo chown -R kiosk:kiosk /var/lib/kiosk/.openclaw/agents
 "
 
+CONFIGURED=""
+[ -n "${ANTHROPIC_KEY}" ] && CONFIGURED="Anthropic"
+[ -n "${OPENROUTER_KEY}" ] && CONFIGURED="${CONFIGURED:+$CONFIGURED + }OpenRouter"
+
 echo ""
-echo "  API key configured on ${TARGET_HOST}."
+echo "  Configured: ${CONFIGURED}"
 echo "  Restarting openclaw-gateway..."
 
 # shellcheck disable=SC2086
