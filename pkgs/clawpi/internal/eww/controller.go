@@ -70,6 +70,16 @@ func (c *Controller) SetTTSPlaying(playing bool) {
 	}
 }
 
+func (c *Controller) SetRecording(recording bool) {
+	if recording {
+		c.update("clawpi_recording", "true")
+		go c.ewwCmd("open", "recording-overlay")
+	} else {
+		c.update("clawpi_recording", "false")
+		go c.ewwCmd("close", "recording-overlay")
+	}
+}
+
 func (c *Controller) update(variable, value string) {
 	arg := fmt.Sprintf("%s=%s", variable, value)
 	if err := c.ewwCmd("update", arg); err != nil {

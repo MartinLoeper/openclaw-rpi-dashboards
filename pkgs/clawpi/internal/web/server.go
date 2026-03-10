@@ -76,6 +76,26 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *eww.Con
 		w.Write([]byte(`{"ok":true}`))
 	})
 
+	// Show the recording indicator overlay
+	mux.HandleFunc("POST /api/recording/start", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("recording: started")
+		if ewwController != nil {
+			ewwController.SetRecording(true)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ok":true}`))
+	})
+
+	// Hide the recording indicator overlay
+	mux.HandleFunc("POST /api/recording/stop", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("recording: stopped")
+		if ewwController != nil {
+			ewwController.SetRecording(false)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ok":true}`))
+	})
+
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err

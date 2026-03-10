@@ -3,6 +3,7 @@
 (defvar clawpi_tool_name "")
 (defvar clawpi_message "")
 (defvar clawpi_tts_playing false)
+(defvar clawpi_recording false)
 
 (defwidget status-indicator []
   (box :class "status-container status-${clawpi_state}"
@@ -42,6 +43,25 @@
   :focusable false
   :namespace "clawpi-overlay"
   (status-indicator))
+
+(defwidget recording-indicator []
+  (box :class "recording-container"
+       :space-evenly false
+    (label :class "recording-icon" :text "🔴")
+    (label :class "recording-text" :text "Recording...")))
+
+(defwindow recording-overlay
+  :monitor 0
+  :geometry (geometry :x "10px"
+                      :y "80px"
+                      :width "200px"
+                      :height "50px"
+                      :anchor "top right")
+  :stacking "overlay"
+  :exclusive false
+  :focusable false
+  :namespace "clawpi-recording"
+  (recording-indicator))
 
 (defwindow tts-stop-overlay
   :monitor 0

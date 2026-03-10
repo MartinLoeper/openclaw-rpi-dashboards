@@ -39,6 +39,26 @@
   50% { opacity: 1.0; }
 }
 
+// Recording indicator
+.recording-container {
+  background-color: rgba(200, 0, 0, 0.8);
+  border-radius: 12px;
+  padding: 8px 20px;
+  color: white;
+  font-size: 18px;
+  font-family: sans-serif;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.recording-icon {
+  font-size: 20px;
+  margin-right: 8px;
+}
+
+.recording-text {
+  font-weight: 500;
+}
+
 // TTS stop button
 .tts-stop-btn {
   background-color: rgba(200, 50, 50, 0.85);

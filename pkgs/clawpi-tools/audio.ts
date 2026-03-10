@@ -287,6 +287,9 @@ export default function (api: any) {
       const tmpFile = `/tmp/clawpi-transcribe-${randomBytes(4).toString("hex")}.wav`;
 
       try {
+        // Show recording indicator
+        await fetch("http://localhost:3100/api/recording/start", { method: "POST" }).catch(() => {});
+
         // Step 1: Record audio
         await new Promise<void>((resolve, reject) => {
           let killed = false;
@@ -311,6 +314,9 @@ export default function (api: any) {
           }, duration * 1000);
         });
 
+        // Hide recording indicator before transcription
+        await fetch("http://localhost:3100/api/recording/stop", { method: "POST" }).catch(() => {});
+
         // Step 2: Transcribe using the wrapper (handles Groq → local fallback + format conversion)
         const { stdout } = await run(transcribeCmd, [tmpFile]);
         const transcript = stdout.trim();
@@ -321,6 +327,7 @@ export default function (api: any) {
             : `No speech detected in ${duration}s recording.`,
         );
       } finally {
+        await fetch("http://localhost:3100/api/recording/stop", { method: "POST" }).catch(() => {});
         await unlink(tmpFile).catch(() => {});
       }
     },

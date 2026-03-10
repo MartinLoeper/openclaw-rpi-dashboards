@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.2
+
+- Show red "Recording..." overlay (top right) while `audio_transcribe` is recording
+- Overlay hides when recording stops (before transcription begins)
+
 ## 0.10.1
 
 - `audio_transcribe` now uses the shared whisper wrapper (Groq first, local whisper.cpp fallback)
