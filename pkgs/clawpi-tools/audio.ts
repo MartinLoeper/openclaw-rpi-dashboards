@@ -8,20 +8,17 @@ import { execFile } from "node:child_process";
 
 const DEBUG = process.env.OPENCLAW_LOG_LEVEL === "debug" || process.env.CLAWPI_DEBUG === "1";
 
-// Read whisper config from the gateway's openclaw.json at import time.
-// Returns { command, model, language } or null if whisper is not configured.
-function getWhisperConfig(): { command: string; model: string; language: string } | null {
+// Read whisper/transcription config from the gateway's openclaw.json at import time.
+// Returns the wrapper command path, or null if audio transcription is not configured.
+// The wrapper handles Groq-first-with-local-fallback and format conversion internally.
+function getTranscribeCommand(): string | null {
   try {
     const configPath = join(homedir(), ".openclaw", "openclaw.json");
-    // Use require for sync read (jiti supports it)
     const fs = require("node:fs");
     const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
     const media = config?.tools?.media?.audio;
     if (!media?.enabled || !media?.models?.[0]) return null;
-    const m = media.models[0];
-    const modelArg = m.args?.[m.args.indexOf("-m") + 1];
-    const langArg = m.args?.[m.args.indexOf("-l") + 1] ?? "auto";
-    return { command: m.command, model: modelArg, language: langArg };
+    return media.models[0].command;
   } catch {
     return null;
   }
@@ -259,13 +256,12 @@ export default function (api: any) {
   api.registerTool({
     name: "audio_transcribe",
     description:
-      "Record audio from the microphone and transcribe it locally using whisper.cpp. " +
+      "Record audio from the microphone and transcribe it using the configured " +
+      "transcription backend (Groq cloud with local whisper.cpp fallback). " +
       "Returns the transcription text. Useful for listening to what the user says, " +
       "capturing ambient speech, or taking voice notes. " +
       "Before recording, ask the user how many seconds to record " +
       "unless they already specified a duration. Defaults to 5 seconds. " +
-      "Use auto language detection by default — only set a specific language " +
-      "if the user explicitly asks to record in a particular language. " +
       "Requires services.clawpi.audio.enable = true.",
     parameters: Type.Object({
       seconds: Type.Optional(
@@ -275,27 +271,19 @@ export default function (api: any) {
           maximum: 60,
         }),
       ),
-      language: Type.Optional(
-        Type.String({
-          description:
-            'Language code for transcription (e.g. "en", "de"). ' +
-            "Defaults to the configured language (usually auto-detect).",
-        }),
-      ),
     }),
     async execute(
       _id: string,
-      params: { seconds?: number; language?: string },
+      params: { seconds?: number },
     ) {
-      const whisper = getWhisperConfig();
-      if (!whisper) {
+      const transcribeCmd = getTranscribeCommand();
+      if (!transcribeCmd) {
         return text(
-          "Error: whisper.cpp is not configured. Enable it with services.clawpi.audio.enable = true.",
+          "Error: audio transcription is not configured. Enable it with services.clawpi.audio.enable = true.",
         );
       }
 
       const duration = params.seconds ?? 5;
-      const lang = params.language ?? whisper.language;
       const tmpFile = `/tmp/clawpi-transcribe-${randomBytes(4).toString("hex")}.wav`;
 
       try {
@@ -323,25 +311,13 @@ export default function (api: any) {
           }, duration * 1000);
         });
 
-        // Step 2: Transcribe with whisper-cli
-        const { stdout } = await run(whisper.command, [
-          "-m", whisper.model,
-          "-l", lang,
-          "-np",
-          "--no-gpu",
-          "-f", tmpFile,
-        ]);
-
-        // whisper-cli outputs timestamps + text, extract just the text
-        const lines = stdout.trim().split("\n");
-        const transcript = lines
-          .map((line: string) => line.replace(/^\[.*?\]\s*/, "").trim())
-          .filter(Boolean)
-          .join(" ");
+        // Step 2: Transcribe using the wrapper (handles Groq → local fallback + format conversion)
+        const { stdout } = await run(transcribeCmd, [tmpFile]);
+        const transcript = stdout.trim();
 
         return text(
           transcript
-            ? `Transcription (${duration}s, lang=${lang}):\n\n${transcript}`
+            ? `Transcription (${duration}s):\n\n${transcript}`
             : `No speech detected in ${duration}s recording.`,
         );
       } finally {

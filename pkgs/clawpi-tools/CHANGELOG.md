@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.1
+
+- `audio_transcribe` now uses the shared whisper wrapper (Groq first, local whisper.cpp fallback)
+- Removed `language` parameter — language is handled by the wrapper config
+- Wrapper also handles format conversion (ffmpeg) automatically
+
 ## 0.10.0
 
 - Add `canvas_folder` tool — get workspace path and usage instructions

@@ -17,7 +17,7 @@ ClawPi ships an OpenClaw plugin (`clawpi-tools`) that gives the agent hardware c
 | `audio_set_input_volume` | Audio | `level` (0.0–1.0) | Set volume of default source (mic) |
 | `audio_set_default_source` | Audio | `source_id` | Switch default audio input by source ID |
 | `audio_record` | Audio | `seconds?` (1–30) | Record audio from mic, returns WAV |
-| `audio_transcribe` | Audio | `seconds?`, `language?` | Record and transcribe speech via whisper.cpp |
+| `audio_transcribe` | Audio | `seconds?` | Record and transcribe speech (Groq cloud or local whisper.cpp) |
 | `audio_play` | Audio | `path` | Play an audio file through the speakers |
 | `tts_hq` | Audio | `text`, `voice?`, `model?` | High-quality TTS via ElevenLabs API |
 | `tts_stop` | Audio | — | Stop any currently playing audio |
@@ -130,16 +130,15 @@ Record audio from the default input source (microphone) for a specified duration
 
 ### `audio_transcribe`
 
-Record audio from the microphone and transcribe it locally using whisper.cpp. Combines `pw-record` + `whisper-cli` in a single tool call. Requires `services.clawpi.audio.enable = true`.
+Record audio from the microphone and transcribe it using the configured transcription backend. Tries Groq cloud first (if enabled), falls back to local whisper.cpp. Requires `services.clawpi.audio.enable = true`.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `seconds` | number | no | 5 | Recording duration in seconds (1–60) |
-| `language` | string | no | (from config) | Language code (e.g. `"en"`, `"de"`) or `"auto"` |
 
 **Returns:** Transcription text, or a "no speech detected" message.
 
-**How it works:** Records via `pw-record`, then runs `whisper-cli` with the model and language from the gateway's `openclaw.json` config. The whisper model path is read dynamically from the config so it stays in sync with the Nix configuration.
+**How it works:** Records via `pw-record`, then calls the shared `whisper-transcribe` wrapper from the gateway's `openclaw.json`. The wrapper tries Groq cloud transcription first (if `services.clawpi.audio.groq.enable = true`), then falls back to local `whisper-cli`. Format conversion is handled automatically.
 
 ### `audio_play`
 
