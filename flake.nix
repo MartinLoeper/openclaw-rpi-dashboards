@@ -78,6 +78,7 @@
             services.clawpi.openrouter.models = [
               { id = "moonshotai/kimi-k2.5"; name = "Kimi K2.5"; reasoning = true; contextWindow = 262144; maxTokens = 65535; }
               { id = "minimax/minimax-m2.5"; name = "MiniMax M2.5"; reasoning = true; contextWindow = 196608; maxTokens = 196608; }
+              { id = "google/gemini-2.5-flash-lite"; name = "Gemini 2.5 Flash Lite"; reasoning = false; contextWindow = 1048576; maxTokens = 8192; }
             ];
             services.clawpi.telegram = {
               enable = true;
@@ -118,6 +119,7 @@
             services.clawpi.openrouter.models = [
               { id = "moonshotai/kimi-k2.5"; name = "Kimi K2.5"; reasoning = true; contextWindow = 262144; maxTokens = 65535; }
               { id = "minimax/minimax-m2.5"; name = "MiniMax M2.5"; reasoning = true; contextWindow = 196608; maxTokens = 196608; }
+              { id = "google/gemini-2.5-flash-lite"; name = "Gemini 2.5 Flash Lite"; reasoning = false; contextWindow = 1048576; maxTokens = 8192; }
             ];
             services.clawpi.telegram = {
               enable = true;
