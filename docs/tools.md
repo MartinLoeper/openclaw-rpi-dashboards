@@ -32,6 +32,7 @@ ClawPi ships an OpenClaw plugin (`clawpi-tools`) that gives the agent hardware c
 | `canvas_restore` | Canvas | `name` | Archive current canvas (if any), restore a project from archive |
 | `display_power` | Display | `state` ("on"/"off") | Turn the display on or off via wlr-randr |
 | `system_poweroff` | System | — | Shut down the Raspberry Pi |
+| `system_reboot` | System | — | Reboot the Raspberry Pi |
 
 ## Audio
 
@@ -384,6 +385,18 @@ Shut down the Raspberry Pi completely. The device will need to be physically pow
 **Returns:** Confirmation that shutdown has been initiated.
 
 **How it works:** Runs `sudo poweroff`. The kiosk user is granted passwordless sudo for `poweroff` when `services.clawpi.powerControl.enable = true`.
+
+### `system_reboot`
+
+Reboot the Raspberry Pi. The system shuts down and starts back up automatically. The agent must always confirm with the user before calling this tool.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| *(none)* | | |
+
+**Returns:** Confirmation that reboot has been initiated.
+
+**How it works:** Runs `sudo reboot`. The kiosk user is granted passwordless sudo for `reboot` when `services.clawpi.powerControl.enable = true`.
 
 ## Planned Tools
 

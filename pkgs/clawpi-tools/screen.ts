@@ -80,6 +80,28 @@ export default function (api: any) {
     },
   });
 
+  // ── System reboot ────────────────────────────────────────────────
+  api.registerTool({
+    name: "system_reboot",
+    description:
+      "Reboot the Raspberry Pi. The system will shut down and start back up automatically. " +
+      "Always confirm with the user before calling this tool. " +
+      "Requires services.clawpi.powerControl.enable = true.",
+    parameters: Type.Object({}),
+    async execute() {
+      if (!POWER_CONTROL) {
+        return text("Error: power control is disabled. Set services.clawpi.powerControl.enable = true.");
+      }
+
+      try {
+        await run("sudo", ["reboot"]);
+        return text("System is rebooting...");
+      } catch (e: any) {
+        return text(`Error: ${e.message || e}`);
+      }
+    },
+  });
+
   // ── Screen recording: start ─────────────────────────────────────
   api.registerTool({
     name: "screen_record_start",

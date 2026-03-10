@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.1
+
+- Add `system_reboot` tool — reboot the Pi (requires user confirmation)
+
 ## 0.11.0
 
 - Add `display_power` tool — turn the display on/off via wlr-randr
