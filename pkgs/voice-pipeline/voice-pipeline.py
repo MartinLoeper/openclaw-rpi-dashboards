@@ -97,7 +97,6 @@ class VoicePipeline:
             "--format", "s16",
             "--rate", str(SAMPLE_RATE),
             "--channels", str(CHANNELS),
-            "--target", "0",  # default source
             "-",  # stdout
         ]
         log.debug("starting: %s", " ".join(cmd))
