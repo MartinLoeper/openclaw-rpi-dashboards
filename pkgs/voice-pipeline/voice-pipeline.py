@@ -282,17 +282,28 @@ class VoicePipeline:
                             break
                         raw = await asyncio.wait_for(ws.recv(), timeout=min(remaining, 30.0))
                         msg = json.loads(raw)
+                        if self.cfg["debug"]:
+                            log.debug("ws_recv: %s", raw[:500])
                         evt = msg.get("event", "")
-                        if msg.get("type") == "event" and evt in ("chat", "agent"):
-                            state = msg.get("payload", {}).get("state")
-                            if state == "final":
-                                log.info("agent finished")
+                        msg_type = msg.get("type", "")
+                        if msg_type == "event" and evt in ("chat", "agent"):
+                            payload = msg.get("payload", {})
+                            state = payload.get("state")
+                            stream = payload.get("stream")
+                            phase = payload.get("data", {}).get("phase") if isinstance(payload.get("data"), dict) else None
+                            # Completion: lifecycle stream with phase "end"
+                            if stream == "lifecycle" and phase == "end":
+                                log.info("agent finished (lifecycle end)")
+                                break
+                            # Legacy: state-based completion
+                            elif state == "final":
+                                log.info("agent finished (state final)")
                                 break
                             elif state in ("error", "aborted"):
                                 log.error("agent %s: %s", state,
-                                          msg.get("payload", {}).get("errorMessage", ""))
+                                          payload.get("errorMessage", ""))
                                 break
-                        elif msg.get("type") == "res" and msg.get("id") == chat_id:
+                        elif msg_type == "res" and msg.get("id") == chat_id:
                             log.debug("chat.send acknowledged")
                 except asyncio.TimeoutError:
                     log.warning("agent response timed out, moving on")
