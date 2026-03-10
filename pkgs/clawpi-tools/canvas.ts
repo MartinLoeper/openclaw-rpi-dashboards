@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import { readdir, rename, mkdir } from "node:fs/promises";
+import { readdir, rename, mkdir, cp } from "node:fs/promises";
 import { existsSync, readdirSync } from "node:fs";
 import http from "node:http";
 import { text } from "./helpers";
@@ -202,6 +202,7 @@ export default function (api: any) {
     name: "canvas_restore",
     description:
       "Restore an archived project back into the active canvas workspace. " +
+      "Files are COPIED from the archive (the archive is preserved, not deleted). " +
       "If the canvas currently has content, it is automatically archived " +
       "first (you must provide auto_archive_name for the current project). " +
       "After restoring, reload the page and navigate to the canvas if the " +
@@ -247,13 +248,14 @@ export default function (api: any) {
         await moveAllEntries(CANVAS_DIR, dest);
       }
 
-      // Move restored project into canvas
+      // Copy archived project into canvas (archive is preserved)
       await mkdir(CANVAS_DIR, { recursive: true });
-      await moveAllEntries(srcDir, CANVAS_DIR);
-
-      // Remove the now-empty archive directory
-      const { rmdir } = await import("node:fs/promises");
-      await rmdir(srcDir).catch(() => {});
+      const entries = await readdir(srcDir);
+      for (const entry of entries) {
+        await cp(`${srcDir}/${entry}`, `${CANVAS_DIR}/${entry}`, {
+          recursive: true,
+        });
+      }
 
       return text(
         `Restored "${params.name}" to ${CANVAS_DIR}\n` +

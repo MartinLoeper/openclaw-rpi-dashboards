@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.2
+
+- `canvas_restore` now copies files from the archive instead of moving them (archive is preserved)
+
 ## 0.11.1
 
 - Add `system_reboot` tool — reboot the Pi (requires user confirmation)

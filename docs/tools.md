@@ -29,7 +29,7 @@ ClawPi ships an OpenClaw plugin (`clawpi-tools`) that gives the agent hardware c
 | `canvas_close` | Canvas | — | Navigate back to the landing page |
 | `canvas_archive` | Canvas | `name` | Archive current canvas project, then clear workspace |
 | `canvas_list_archive` | Canvas | — | List all archived canvas projects |
-| `canvas_restore` | Canvas | `name` | Archive current canvas (if any), restore a project from archive |
+| `canvas_restore` | Canvas | `name` | Archive current canvas (if any), copy a project from archive (archive preserved) |
 | `display_power` | Display | `state` ("on"/"off") | Turn the display on or off via wlr-randr |
 | `system_poweroff` | System | — | Shut down the Raspberry Pi |
 | `system_reboot` | System | — | Reboot the Raspberry Pi |
@@ -353,7 +353,7 @@ Restore an archived project back into the active canvas workspace. If the canvas
 
 **How it works:**
 1. If the canvas directory is non-empty, archives the current project first (agent must provide a name for it)
-2. Moves the named project from the archive back into the canvas directory
+2. **Copies** the named project from the archive into the canvas directory (the archive is preserved, not deleted)
 3. The project is now live and served at `http://localhost:3100/canvas/`
 
 Call `canvas_open` after restoring to navigate the browser to the restored content.
