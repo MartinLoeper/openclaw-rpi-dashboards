@@ -6,6 +6,15 @@ let
   groqCfg = osConfig.services.clawpi.audio.groq;
   debugCfg = osConfig.services.clawpi.debug;
 
+  # Resolve wake word model path: explicit model > assistantName lookup > none
+  assistantModels = {
+    claw = "${pkgs.hey-claw-model}/share/openwakeword/models/hey_claw.onnx";
+    jarvis = null;  # uses bundled model in openwakeword package
+  };
+  resolvedModel =
+    if voiceCfg.wakewordModel != null then voiceCfg.wakewordModel
+    else assistantModels.${voiceCfg.assistantName} or null;
+
   whisperModel = pkgs.whisper-model.override { model = audioCfg.model; };
 
   log = msg: lib.optionalString debugCfg
@@ -86,8 +95,8 @@ lib.mkIf voiceCfg.enable {
         "CLAWPI_SILENCE_TIMEOUT=${toString voiceCfg.silenceTimeout}"
         "CLAWPI_MAX_RECORD_SECS=${toString voiceCfg.maxRecordSeconds}"
         "CLAWPI_WHISPER_CMD=${whisperCmd}"
-      ] ++ lib.optional (voiceCfg.wakewordModel != null)
-        "CLAWPI_WAKEWORD_MODEL=${voiceCfg.wakewordModel}"
+      ] ++ lib.optional (resolvedModel != null)
+        "CLAWPI_WAKEWORD_MODEL=${resolvedModel}"
       ++ lib.optional debugCfg "CLAWPI_DEBUG=true";
     };
   };
