@@ -66,6 +66,7 @@ Once whisper.cpp produces a transcript, send it to the OpenClaw gateway as a use
 - **Transport:** WebSocket to `localhost:18789` (same as the browser UI)
 - **Auth:** use the gateway token from `/var/lib/kiosk/.openclaw`
 - **Session:** reuse the active kiosk agent session (same session the browser is connected to)
+- **Delivery:** `deliver: true` — voice commands are forwarded to all connected channels (including Telegram), so the user sees the agent's response wherever they are
 
 The agent receives the voice command as if the user typed it, and can respond with browser actions, Eww overlays, or any other tool.
 
@@ -77,8 +78,8 @@ The agent receives the voice command as if the user typed it, and can respond wi
 services.clawpi.voice = {
   enable = true;
 
-  # Path to a custom wake word .tflite model (null = bundled "hey jarvis")
-  wakewordModel = ./models/hey_claw.tflite;
+  # Path to a custom wake word .onnx model (null = bundled "hey jarvis")
+  wakewordModel = ./models/hey_claw.onnx;
 
   # Detection threshold 0.0–1.0 (lower = more sensitive)
   threshold = 0.5;
@@ -118,7 +119,7 @@ The `clawpi-voice-pipeline` systemd user service runs after PipeWire and the gat
 | whisper.cpp | ✅ In nixpkgs | Used via `whisper-cpp` package |
 | openWakeWord | ✅ Packaged | `pkgs/voice-pipeline/openwakeword.nix` (v0.6.0, wheel, pre-fetched models) |
 | ONNX Runtime | ✅ In nixpkgs | Dependency of openWakeWord |
-| ai-edge-litert | ✅ In nixpkgs | TFLite runtime, dependency of openWakeWord |
+| ai-edge-litert | ❌ Removed | Not needed — ONNX Runtime handles all inference |
 | Custom "hey claw" model | ❌ Not yet | Train + include as a static asset (see Training section) |
 
 ## Pipeline Orchestrator

@@ -253,7 +253,7 @@ class VoicePipeline:
                     "params": {
                         "sessionKey": "main",
                         "message": transcript,
-                        "deliver": False,
+                        "deliver": True,
                         "idempotencyKey": idempotency_key,
                     },
                 }))
