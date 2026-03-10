@@ -18,8 +18,8 @@ custom_negative_phrases:
   - "hey y'all"
 
 # Number of synthetic samples to generate
-n_samples: 50000
-n_samples_val: 5000
+n_samples: 10000
+n_samples_val: 1000
 
 # TTS batch size for synthetic generation
 tts_batch_size: 50
@@ -64,6 +64,6 @@ model_type: "dnn"
 layer_size: 32
 
 # Training parameters
-steps: 50000
+steps: 10000
 max_negative_weight: 1500
 target_false_positives_per_hour: 0.2
