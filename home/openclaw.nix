@@ -10,7 +10,7 @@ let
   elevenlabsCfg = osConfig.services.clawpi.elevenlabs;
   powerCfg = osConfig.services.clawpi.powerControl;
   tgCfg = osConfig.services.clawpi.telegram;
-  orModelsCfg = osConfig.services.clawpi.openrouter.models;
+  allowedModelsCfg = osConfig.services.clawpi.allowedModels;
 
   # Append ClawPi-specific instructions to the agent's AGENTS.md at service start.
   # Uses a marker comment so the block is only injected once and updated in-place on redeploy.
@@ -129,20 +129,20 @@ let
 
   # Build the agents.defaults.models allowlist for openclaw.json.
   # See https://docs.openclaw.ai/concepts/models#model-is-not-allowed
-  orModelsConfig = lib.optionalAttrs (orModelsCfg != []) {
+  modelsAllowlist = lib.optionalAttrs (allowedModelsCfg != []) {
     agents.defaults.models = builtins.listToAttrs (map (m: {
-      name = "openrouter/${m.id}";
+      name = m.id;
       value = { alias = m.name; };
-    }) orModelsCfg);
+    }) allowedModelsCfg);
   };
 
-  orModelsConfigFile = pkgs.writeText "openclaw-models-config.json"
-    (builtins.toJSON orModelsConfig);
+  modelsAllowlistFile = pkgs.writeText "openclaw-models-allowlist.json"
+    (builtins.toJSON modelsAllowlist);
 
   patchModelsScript = pkgs.writeShellScript "patch-openclaw-models" ''
     configFile="$HOME/.openclaw/openclaw.json"
     if [ -f "$configFile" ]; then
-      ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$configFile" "${orModelsConfigFile}" > "$configFile.tmp" \
+      ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$configFile" "${modelsAllowlistFile}" > "$configFile.tmp" \
         && ${pkgs.coreutils}/bin/mv "$configFile.tmp" "$configFile"
     fi
   '';
@@ -257,7 +257,7 @@ in
         ++ lib.optional powerCfg.enable "CLAWPI_POWER_CONTROL=1";
       ExecStartPre = [ (toString patchAgentsScript) ]
         ++ lib.optional audioCfg.enable (toString patchConfigScript)
-        ++ lib.optional (orModelsCfg != []) (toString patchModelsScript);
+        ++ lib.optional (allowedModelsCfg != []) (toString patchModelsScript);
     };
   };
 

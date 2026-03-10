@@ -62,38 +62,27 @@ in
       };
     };
 
-    openrouter.models = lib.mkOption {
+    allowedModels = lib.mkOption {
       type = lib.types.listOf (lib.types.submodule {
         options = {
           id = lib.mkOption {
             type = lib.types.str;
-            description = "OpenRouter model ID (e.g. 'moonshotai/kimi-k2.5').";
+            description = ''
+              Fully qualified model ID including provider prefix.
+              Examples: "anthropic/claude-haiku-4-5", "openrouter/moonshotai/kimi-k2.5".
+            '';
           };
           name = lib.mkOption {
             type = lib.types.str;
-            description = "Human-readable model name.";
-          };
-          reasoning = lib.mkOption {
-            type = lib.types.bool;
-            default = false;
-            description = "Whether the model supports reasoning/thinking.";
-          };
-          contextWindow = lib.mkOption {
-            type = lib.types.int;
-            default = 131072;
-            description = "Context window size in tokens.";
-          };
-          maxTokens = lib.mkOption {
-            type = lib.types.int;
-            default = 8192;
-            description = "Maximum output tokens.";
+            description = "Human-readable model alias.";
           };
         };
       });
       default = [];
       description = ''
-        Additional OpenRouter models to allow in the agent's models.json.
-        The 'auto' model is always included by default.
+        Models to allow in the agent's allowlist (agents.defaults.models in openclaw.json).
+        Use the full provider/model-id format. When non-empty, only these models can be used.
+        See https://docs.openclaw.ai/concepts/models#model-is-not-allowed
       '';
     };
 

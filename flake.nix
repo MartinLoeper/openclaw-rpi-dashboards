@@ -75,10 +75,14 @@
             services.clawpi.audio.groq.enable = true;
             services.clawpi.elevenlabs.enable = true;
             services.clawpi.voice.enable = true;
-            services.clawpi.openrouter.models = [
-              { id = "moonshotai/kimi-k2.5"; name = "Kimi K2.5"; reasoning = true; contextWindow = 262144; maxTokens = 65535; }
-              { id = "minimax/minimax-m2.5"; name = "MiniMax M2.5"; reasoning = true; contextWindow = 196608; maxTokens = 196608; }
-              { id = "google/gemini-2.5-flash-lite"; name = "Gemini 2.5 Flash Lite"; reasoning = false; contextWindow = 1048576; maxTokens = 8192; }
+            services.clawpi.allowedModels = [
+              # Anthropic
+              { id = "anthropic/claude-sonnet-4-5"; name = "Sonnet 4.5"; }
+              { id = "anthropic/claude-haiku-4-5"; name = "Haiku 4.5"; }
+              # OpenRouter
+              { id = "openrouter/moonshotai/kimi-k2.5"; name = "Kimi K2.5"; }
+              { id = "openrouter/minimax/minimax-m2.5"; name = "MiniMax M2.5"; }
+              { id = "openrouter/google/gemini-2.5-flash-lite"; name = "Gemini 2.5 Flash Lite"; }
             ];
             services.clawpi.telegram = {
               enable = true;
@@ -116,10 +120,14 @@
             services.clawpi.audio.groq.enable = true;
             services.clawpi.elevenlabs.enable = true;
             services.clawpi.voice.enable = true;
-            services.clawpi.openrouter.models = [
-              { id = "moonshotai/kimi-k2.5"; name = "Kimi K2.5"; reasoning = true; contextWindow = 262144; maxTokens = 65535; }
-              { id = "minimax/minimax-m2.5"; name = "MiniMax M2.5"; reasoning = true; contextWindow = 196608; maxTokens = 196608; }
-              { id = "google/gemini-2.5-flash-lite"; name = "Gemini 2.5 Flash Lite"; reasoning = false; contextWindow = 1048576; maxTokens = 8192; }
+            services.clawpi.allowedModels = [
+              # Anthropic
+              { id = "anthropic/claude-sonnet-4-5"; name = "Sonnet 4.5"; }
+              { id = "anthropic/claude-haiku-4-5"; name = "Haiku 4.5"; }
+              # OpenRouter
+              { id = "openrouter/moonshotai/kimi-k2.5"; name = "Kimi K2.5"; }
+              { id = "openrouter/minimax/minimax-m2.5"; name = "MiniMax M2.5"; }
+              { id = "openrouter/google/gemini-2.5-flash-lite"; name = "Gemini 2.5 Flash Lite"; }
             ];
             services.clawpi.telegram = {
               enable = true;
