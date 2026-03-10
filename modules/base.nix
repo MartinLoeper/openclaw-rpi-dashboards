@@ -32,7 +32,7 @@
   };
   users.groups.kiosk = { };
 
-  environment.systemPackages = with pkgs; [ openclaw-gateway sshpass vim ];
+  environment.systemPackages = with pkgs; [ openclaw-gateway sshpass vim jq ];
 
   hardware.graphics.enable = true;
 
