@@ -23,7 +23,7 @@ in
 
     silenceTimeout = lib.mkOption {
       type = lib.types.float;
-      default = 3.0;
+      default = 1.5;
       description = "Seconds of silence before stopping speech recording.";
     };
 

@@ -115,6 +115,15 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *eww.Con
 		w.Write([]byte(`{"ok":true}`))
 	})
 
+	mux.HandleFunc("POST /api/voice/delivering", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("voice: delivering to agent")
+		if ewwController != nil {
+			ewwController.SetState(eww.StateDelivering)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ok":true}`))
+	})
+
 	mux.HandleFunc("POST /api/voice/idle", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("voice: idle")
 		if ewwController != nil {

@@ -11,7 +11,7 @@ Environment variables:
   OPENCLAW_GATEWAY_TOKEN - Gateway auth token (required)
   CLAWPI_WAKEWORD_MODEL  - Path to wake word .tflite model
   CLAWPI_WAKEWORD_THRESHOLD - Detection threshold 0.0-1.0 (default: 0.5)
-  CLAWPI_SILENCE_TIMEOUT - Seconds of silence before stopping (default: 3.0)
+  CLAWPI_SILENCE_TIMEOUT - Seconds of silence before stopping (default: 1.5)
   CLAWPI_MAX_RECORD_SECS - Max recording duration in seconds (default: 15)
   CLAWPI_WEB_URL         - ClawPi web server URL (default: http://localhost:3100)
   CLAWPI_DEBUG           - Enable debug logging (default: false)
@@ -48,7 +48,7 @@ def get_config():
         "gateway_token": os.environ.get("OPENCLAW_GATEWAY_TOKEN", ""),
         "wakeword_model": os.environ.get("CLAWPI_WAKEWORD_MODEL", ""),
         "threshold": float(os.environ.get("CLAWPI_WAKEWORD_THRESHOLD", "0.5")),
-        "silence_timeout": float(os.environ.get("CLAWPI_SILENCE_TIMEOUT", "3.0")),
+        "silence_timeout": float(os.environ.get("CLAWPI_SILENCE_TIMEOUT", "1.5")),
         "max_record_secs": float(os.environ.get("CLAWPI_MAX_RECORD_SECS", "15")),
         "web_url": os.environ.get("CLAWPI_WEB_URL", "http://localhost:3100"),
         "debug": os.environ.get("CLAWPI_DEBUG", "false").lower() in ("true", "1", "yes"),
@@ -350,6 +350,7 @@ class VoicePipeline:
 
                         if transcript:
                             log.info("transcript: %s", transcript)
+                            self._notify_state("delivering")
                             asyncio.run(self._send_to_gateway(transcript))
                         else:
                             log.info("empty transcript, nothing to send")

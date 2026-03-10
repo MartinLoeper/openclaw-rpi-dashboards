@@ -11,6 +11,7 @@
        :space-evenly false
     (label :class "status-icon"
            :text {clawpi_state == "transcribing" ? "🎙" :
+                  clawpi_state == "delivering" ? "📡" :
                   clawpi_state == "thinking" ? "🧠" :
                   clawpi_state == "tool_use" ? "🔧" :
                   clawpi_state == "responding" ? "💬" :
@@ -18,6 +19,7 @@
                   clawpi_state == "disconnected" ? "🔌" : ""})
     (label :class "status-text"
            :text {clawpi_state == "transcribing" ? "Transcribing..." :
+                  clawpi_state == "delivering" ? "Delivering..." :
                   clawpi_state == "thinking" ? "Thinking..." :
                   clawpi_state == "tool_use" ? "Using: ${clawpi_tool_name}" :
                   clawpi_state == "responding" ? "Responding..." :
