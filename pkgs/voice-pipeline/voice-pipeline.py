@@ -75,12 +75,12 @@ class VoicePipeline:
             log.info("loading wake word model: %s", model_path)
             self._oww_model = Model(
                 wakeword_models=[model_path],
-                inference_framework="tflite",
+                inference_framework="onnx",
             )
         else:
             # Use bundled models (e.g. hey_jarvis)
             log.info("loading bundled wake word models")
-            self._oww_model = Model(inference_framework="tflite")
+            self._oww_model = Model(inference_framework="onnx")
 
         log.info("wake word models loaded: %s", list(self._oww_model.models.keys()))
 

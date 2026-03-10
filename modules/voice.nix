@@ -10,8 +10,8 @@ in
       type = lib.types.nullOr lib.types.path;
       default = null;
       description = ''
-        Path to a custom wake word .tflite model file.
-        When null, the bundled "hey jarvis" model is used.
+        Path to a custom wake word model file (.onnx or .tflite).
+        When null, the bundled "hey jarvis" ONNX model is used.
       '';
     };
 
