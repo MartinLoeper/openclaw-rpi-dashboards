@@ -393,3 +393,19 @@ Set up a proper documentation website using [Docusaurus](https://docusaurus.io/)
 - **Contributing** — how to add new tools, write skills, extend the kiosk, and submit PRs
 
 Host on GitHub Pages (free, auto-deploys from a `docs` branch or `/docs` folder via GitHub Actions). The current `docs/` Markdown files can serve as the content source — Docusaurus can consume them with minimal restructuring.
+
+## Fast Default Model with Subagent Escalation
+
+For better interactive usability (especially voice), use a fast, cheap default model like **Kimi K2.5 Thinking** as the primary agent model. It handles simple commands (navigate, play video, answer questions, control hardware) with low latency and minimal cost.
+
+For complex tasks that need stronger reasoning — like **coding canvas dashboards**, writing multi-file HTML/CSS/JS, debugging, or architectural decisions — the agent should automatically spawn a more powerful **Claude Opus subagent** via OpenClaw's subagent/delegation mechanism. The fast model acts as a router: it handles simple tasks itself and escalates to Opus when it detects the task requires deeper reasoning or code generation.
+
+**Benefits:**
+- **Lower latency** — voice commands get near-instant responses for simple tasks (no waiting for a large model to think)
+- **Lower cost** — fast models are 10-50x cheaper per token; Opus is only invoked when needed
+- **Better UX** — the agent feels snappy for everyday use while still capable of complex work
+
+**Implementation:**
+- Configure Kimi K2.5 (or similar: Gemini Flash, GPT-4o-mini) as the default model in `openclaw.json`
+- Add agent instructions (in `AGENTS.md`) that tell the fast model when to delegate: "For tasks involving writing code, building dashboards, multi-step reasoning, or debugging, delegate to the `opus` subagent"
+- Configure a named subagent profile in OpenClaw that uses Claude Opus with higher token limits and appropriate system prompts
