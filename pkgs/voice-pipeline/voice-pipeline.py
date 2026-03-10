@@ -29,6 +29,8 @@ import tempfile
 import time
 import uuid
 
+import re
+
 import numpy as np
 import openwakeword
 from openwakeword.model import Model
@@ -53,6 +55,17 @@ def get_config():
         "web_url": os.environ.get("CLAWPI_WEB_URL", "http://localhost:3100"),
         "debug": os.environ.get("CLAWPI_DEBUG", "false").lower() in ("true", "1", "yes"),
     }
+
+
+def clean_transcript(raw):
+    """Strip whisper timestamp lines and noise markers from transcript."""
+    # Remove timestamp prefixes like [00:00:00.000 --> 00:00:06.200]
+    text = re.sub(r'\[[\d:.]+\s*-->\s*[\d:.]+\]\s*', '', raw)
+    # Remove common whisper noise markers
+    noise_markers = ['[BLANK_AUDIO]', '[MUSIC]', '[NOISE]', '[SILENCE]', '(silence)', '(music)']
+    for marker in noise_markers:
+        text = text.replace(marker, '')
+    return text.strip()
 
 
 def rms_energy(audio_chunk):
@@ -259,12 +272,18 @@ class VoicePipeline:
                 }))
                 log.info("sent transcript to gateway: %s", transcript[:100])
 
-                # Step 5: Wait for agent to finish
+                # Step 5: Wait for agent to finish (max 60s overall)
+                deadline = time.monotonic() + 60.0
                 try:
                     while True:
-                        raw = await asyncio.wait_for(ws.recv(), timeout=120.0)
+                        remaining = deadline - time.monotonic()
+                        if remaining <= 0:
+                            log.warning("agent did not finish within 60s, moving on")
+                            break
+                        raw = await asyncio.wait_for(ws.recv(), timeout=min(remaining, 30.0))
                         msg = json.loads(raw)
-                        if msg.get("type") == "event" and msg.get("event") == "chat":
+                        evt = msg.get("event", "")
+                        if msg.get("type") == "event" and evt in ("chat", "agent"):
                             state = msg.get("payload", {}).get("state")
                             if state == "final":
                                 log.info("agent finished")
@@ -276,7 +295,7 @@ class VoicePipeline:
                         elif msg.get("type") == "res" and msg.get("id") == chat_id:
                             log.debug("chat.send acknowledged")
                 except asyncio.TimeoutError:
-                    log.warning("agent did not finish within 120s")
+                    log.warning("agent response timed out, moving on")
 
                 return True
         except Exception as e:
@@ -343,7 +362,7 @@ class VoicePipeline:
                                 text=True,
                                 timeout=60,
                             )
-                            transcript = result.stdout.strip()
+                            transcript = clean_transcript(result.stdout)
                         else:
                             log.error("CLAWPI_WHISPER_CMD not set")
                             transcript = ""
@@ -354,6 +373,7 @@ class VoicePipeline:
                             asyncio.run(self._send_to_gateway(transcript))
                         else:
                             log.info("empty transcript, nothing to send")
+                            self._notify_state("not_understood")
                     except subprocess.TimeoutExpired:
                         log.error("whisper transcription timed out")
                     except Exception as e:

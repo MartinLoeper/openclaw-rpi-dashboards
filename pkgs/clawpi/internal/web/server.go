@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"time"
 
 	"clawpi/internal/eww"
 )
@@ -110,6 +111,7 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *eww.Con
 		log.Println("voice: transcribing")
 		if ewwController != nil {
 			ewwController.SetRecording(false)
+			ewwController.SetState(eww.StateTranscribing)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"ok":true}`))
@@ -124,10 +126,25 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *eww.Con
 		w.Write([]byte(`{"ok":true}`))
 	})
 
+	mux.HandleFunc("POST /api/voice/not_understood", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("voice: not understood (empty transcript)")
+		if ewwController != nil {
+			ewwController.SetMessage("Didn't catch that")
+			ewwController.SetState(eww.StateError)
+			go func() {
+				time.Sleep(3 * time.Second)
+				ewwController.SetState(eww.StateIdle)
+			}()
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ok":true}`))
+	})
+
 	mux.HandleFunc("POST /api/voice/idle", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("voice: idle")
 		if ewwController != nil {
 			ewwController.SetRecording(false)
+			ewwController.SetState(eww.StateIdle)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"ok":true}`))

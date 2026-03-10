@@ -12,6 +12,7 @@ type State string
 
 const (
 	StateIdle         State = "idle"
+	StateTranscribing State = "transcribing"
 	StateDelivering   State = "delivering"
 	StateThinking     State = "thinking"
 	StateResponding   State = "responding"
