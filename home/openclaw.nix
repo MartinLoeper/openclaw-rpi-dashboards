@@ -161,8 +161,8 @@ let
   # inject it via jq in ExecStartPre (same pattern as tools.media.audio).
   matrixChannelConfig = lib.optionalAttrs mxCfg.enable ({
     channels.matrix = {
+      enabled = true;
       homeserver = mxCfg.homeserver;
-      accessTokenFile = mxCfg.accessTokenFile;
     }
     // lib.optionalAttrs mxCfg.encryption { encryption = true; }
     // { dm = { policy = mxCfg.dm.policy; }
@@ -187,8 +187,12 @@ let
 
   patchMatrixScript = pkgs.writeShellScript "patch-openclaw-matrix" ''
     configFile="$HOME/.openclaw/openclaw.json"
-    if [ -f "$configFile" ]; then
-      ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$configFile" "${matrixConfigFile}" > "$configFile.tmp" \
+    tokenFile="${toString mxCfg.accessTokenFile}"
+    if [ -f "$configFile" ] && [ -f "$tokenFile" ]; then
+      token="$(${pkgs.coreutils}/bin/cat "$tokenFile")"
+      ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$configFile" "${matrixConfigFile}" \
+        | ${pkgs.jq}/bin/jq --arg tok "$token" '.channels.matrix.accessToken = $tok' \
+        > "$configFile.tmp" \
         && ${pkgs.coreutils}/bin/mv "$configFile.tmp" "$configFile"
     fi
   '';
