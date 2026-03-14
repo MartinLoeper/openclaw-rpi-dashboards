@@ -1,5 +1,12 @@
 final: prev:
 let
+  # Pre-built native crypto library for Matrix E2EE (aarch64-linux, glibc).
+  # The npm package tries to download this at runtime, which fails in the Nix store.
+  matrixCryptoNative = prev.fetchurl {
+    url = "https://github.com/matrix-org/matrix-rust-sdk-crypto-nodejs/releases/download/v0.4.0/matrix-sdk-crypto.linux-arm64-gnu.node";
+    hash = "sha256-DcHFgxVYDNDO85wuHsKOHjiFajN28ll9oa4gOI8k0PQ=";
+  };
+
   fixDeps = drv: drv.overrideAttrs (old: {
     postPhases = (old.postPhases or []) ++ [ "fixMissingDeps" ];
     fixMissingDeps = ''
@@ -13,6 +20,15 @@ let
             ln -s "$long_src" "$pkg/node_modules/long"
           fi
         done
+      fi
+
+      # Install pre-built native crypto library for Matrix.
+      # The npm package tries to download it at runtime, which fails in the Nix store.
+      crypto_pkg="$(find "$out/lib/openclaw/node_modules/.pnpm" \
+        -path "*/@matrix-org+matrix-sdk-crypto-nodejs@*/node_modules/@matrix-org/matrix-sdk-crypto-nodejs" \
+        -print | head -n 1)"
+      if [ -n "$crypto_pkg" ]; then
+        cp "${matrixCryptoNative}" "$crypto_pkg/matrix-sdk-crypto.linux-arm64-gnu.node"
       fi
 
       # Work around missing dependencies for the Matrix extension.
