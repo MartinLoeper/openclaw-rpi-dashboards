@@ -3,6 +3,7 @@
 ## Deployment
 
 - **Deploy command:** `./scripts/deploy.sh [host] --specialisation kiosk`
+- **Flake configuration:** Set via `FLAKE_ATTR` env var (defaults to `rpi5`). Example: `FLAKE_ATTR=rpi5-matrix-debug ./scripts/deploy.sh ...` — do NOT pass `--flake` as a CLI argument.
 - **Default specialisation:** `kiosk` (always deploy with `--specialisation kiosk` unless told otherwise)
 - See `docs/deployment.md` for full deployment workflow, specialisation switching, and known issues.
 - See `docs/getting-started.md` for prerequisites and initial setup.
