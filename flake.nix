@@ -177,6 +177,7 @@
             ];
             services.clawpi.matrix = {
               enable = true;
+              homeserver = "https://matrix.glinq.org";
               encryption = true;
               dm.policy = "pairing";
               replyToMode = "all";
