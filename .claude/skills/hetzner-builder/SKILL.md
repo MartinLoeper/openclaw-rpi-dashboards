@@ -154,6 +154,23 @@ hcloud server delete openclaw-builder
 
 Only suggest deletion if the user explicitly says they are done with the server for good.
 
+## SSH key management
+
+To grant someone access to the build server:
+
+```sh
+# 1. Generate a new SSH key pair
+ssh-keygen -t ed25519 -f ~/.ssh/<name>-clawpi -C "<name>-clawpi" -N ""
+
+# 2. Upload the public key to Hetzner (for future server creates)
+hcloud ssh-key create --name <name>-clawpi --public-key-from-file ~/.ssh/<name>-clawpi.pub
+
+# 3. Add the public key to a running server's authorized_keys
+cat ~/.ssh/<name>-clawpi.pub | ssh root@<server-ip> "cat >> ~/.ssh/authorized_keys"
+```
+
+**Note:** Hetzner only injects SSH keys at server creation time. To add keys to an already running server, you must append them to `~/.ssh/authorized_keys` manually via SSH (step 3).
+
 ## Why this exists
 
 The project uses two different nixpkgs revisions:
