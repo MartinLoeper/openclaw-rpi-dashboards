@@ -13,8 +13,7 @@ ShellRoot {
     property string toolName: ""
     property string message: ""
 
-    function parseState(rawText) {
-        var str = typeof rawText === "function" ? rawText() : rawText;
+    function parseState(str) {
         if (!str || str.length === 0) return;
         try {
             var obj = JSON.parse(str);
@@ -59,7 +58,8 @@ ShellRoot {
         id: stateFile
         path: Quickshell.env("XDG_RUNTIME_DIR") + "/clawpi-state.json"
         watchChanges: true
-        onTextChanged: root.parseState(text)
+        preload: true
+        onFileChanged: root.parseState(stateFile.text())
     }
 
     PanelWindow {
