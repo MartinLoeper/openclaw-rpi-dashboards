@@ -178,7 +178,9 @@
             services.clawpi.matrix = {
               enable = true;
               homeserver = "https://matrix.glinq.org";
-              encryption = true;
+              # E2EE disabled: @matrix-org/matrix-sdk-crypto-nodejs tries to
+              # download a native binary at runtime, which fails in the Nix store.
+              encryption = false;
               dm.policy = "pairing";
               replyToMode = "all";
               actions = {
