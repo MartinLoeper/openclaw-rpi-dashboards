@@ -9,6 +9,7 @@ let
   canvasArchiveDir = "/var/lib/kiosk/.openclaw/canvas-archive";
   elevenlabsCfg = osConfig.services.clawpi.elevenlabs;
   powerCfg = osConfig.services.clawpi.powerControl;
+  mxCfg = osConfig.services.clawpi.matrix;
   tgCfg = osConfig.services.clawpi.telegram;
   allowedModelsCfg = osConfig.services.clawpi.allowedModels;
 
@@ -155,6 +156,43 @@ let
     fi
   '';
 
+  # Build the channels.matrix config as JSON for runtime patching.
+  # Matrix is not yet in the upstream nix-openclaw Zod schema, so we
+  # inject it via jq in ExecStartPre (same pattern as tools.media.audio).
+  matrixChannelConfig = lib.optionalAttrs mxCfg.enable ({
+    channels.matrix = {
+      homeserver = mxCfg.homeserver;
+      accessTokenFile = mxCfg.accessTokenFile;
+    }
+    // lib.optionalAttrs mxCfg.encryption { encryption = true; }
+    // { dm = { policy = mxCfg.dm.policy; }
+         // lib.optionalAttrs (mxCfg.dm.allowFrom != [ ]) { allowFrom = mxCfg.dm.allowFrom; };
+       }
+    // lib.optionalAttrs (mxCfg.groupPolicy != null) { groupPolicy = mxCfg.groupPolicy; }
+    // lib.optionalAttrs (mxCfg.groupAllowFrom != [ ]) { groupAllowFrom = mxCfg.groupAllowFrom; }
+    // lib.optionalAttrs (mxCfg.groups != { }) { groups = mxCfg.groups; }
+    // lib.optionalAttrs (mxCfg.autoJoin != null) { autoJoin = mxCfg.autoJoin; }
+    // lib.optionalAttrs (mxCfg.autoJoinAllowlist != [ ]) { autoJoinAllowlist = mxCfg.autoJoinAllowlist; }
+    // lib.optionalAttrs (mxCfg.threadReplies != null) { threadReplies = mxCfg.threadReplies; }
+    // lib.optionalAttrs (mxCfg.replyToMode != null) { replyToMode = mxCfg.replyToMode; }
+    // lib.optionalAttrs (mxCfg.actions.reactions != null || mxCfg.actions.sendMessage != null) {
+      actions = {}
+        // lib.optionalAttrs (mxCfg.actions.reactions != null) { reactions = mxCfg.actions.reactions; }
+        // lib.optionalAttrs (mxCfg.actions.sendMessage != null) { sendMessage = mxCfg.actions.sendMessage; };
+    };
+  });
+
+  matrixConfigFile = pkgs.writeText "openclaw-matrix-config.json"
+    (builtins.toJSON matrixChannelConfig);
+
+  patchMatrixScript = pkgs.writeShellScript "patch-openclaw-matrix" ''
+    configFile="$HOME/.openclaw/openclaw.json"
+    if [ -f "$configFile" ]; then
+      ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$configFile" "${matrixConfigFile}" > "$configFile.tmp" \
+        && ${pkgs.coreutils}/bin/mv "$configFile.tmp" "$configFile"
+    fi
+  '';
+
   # Build the channels.telegram attrset only when enabled.
   telegramChannel = lib.mkIf tgCfg.enable {
     tokenFile = tgCfg.tokenFile;
@@ -257,7 +295,8 @@ in
         ++ lib.optional powerCfg.enable "CLAWPI_POWER_CONTROL=1";
       ExecStartPre = [ (toString patchAgentsScript) ]
         ++ lib.optional audioCfg.enable (toString patchConfigScript)
-        ++ lib.optional (allowedModelsCfg != []) (toString patchModelsScript);
+        ++ lib.optional (allowedModelsCfg != []) (toString patchModelsScript)
+        ++ lib.optional mxCfg.enable (toString patchMatrixScript);
     };
   };
 

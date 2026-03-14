@@ -187,6 +187,118 @@ in
       };
     };
 
+    matrix = {
+      enable = lib.mkEnableOption "Matrix channel for the OpenClaw agent";
+
+      homeserver = lib.mkOption {
+        type = lib.types.str;
+        default = "https://matrix.org";
+        description = "Homeserver URL (e.g. https://matrix.example.org).";
+      };
+
+      accessTokenFile = lib.mkOption {
+        type = lib.types.str;
+        default = "/var/lib/clawpi/matrix-access-token";
+        description = ''
+          Path to a file containing the Matrix access token.
+          Provision with: ./scripts/provision-matrix.sh
+        '';
+      };
+
+      encryption = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Enable end-to-end encryption (E2EE).";
+      };
+
+      dm = {
+        policy = lib.mkOption {
+          type = lib.types.enum [ "pairing" "allowlist" "open" "disabled" ];
+          default = "pairing";
+          description = "DM acceptance policy.";
+        };
+
+        allowFrom = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = ''
+            Matrix user IDs allowed to DM the bot (e.g. "@user:example.org").
+            Only used when dm.policy is "allowlist".
+          '';
+        };
+      };
+
+      groupPolicy = lib.mkOption {
+        type = lib.types.nullOr (lib.types.enum [ "allowlist" "open" "disabled" ]);
+        default = null;
+        description = "Group/room message policy. null uses the gateway default.";
+      };
+
+      groupAllowFrom = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "Matrix user IDs allowed to trigger the bot in rooms.";
+      };
+
+      groups = lib.mkOption {
+        type = lib.types.attrsOf (lib.types.submodule {
+          options = {
+            allow = lib.mkOption {
+              type = lib.types.bool;
+              default = true;
+              description = "Allow the bot in this room.";
+            };
+            requireMention = lib.mkOption {
+              type = lib.types.nullOr lib.types.bool;
+              default = null;
+              description = "Require @bot mention in this room. null uses global default.";
+            };
+          };
+        });
+        default = { };
+        description = ''
+          Per-room settings keyed by room ID (!id:server) or alias (#alias:server).
+        '';
+      };
+
+      autoJoin = lib.mkOption {
+        type = lib.types.nullOr (lib.types.enum [ "always" "allowlist" "off" ]);
+        default = null;
+        description = "Auto-join behaviour for room invites. null uses the gateway default.";
+      };
+
+      autoJoinAllowlist = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "Room IDs/aliases the bot may auto-join (when autoJoin is 'allowlist').";
+      };
+
+      threadReplies = lib.mkOption {
+        type = lib.types.nullOr (lib.types.enum [ "off" "inbound" "always" ]);
+        default = null;
+        description = "Thread reply behaviour. null uses the gateway default.";
+      };
+
+      replyToMode = lib.mkOption {
+        type = lib.types.nullOr (lib.types.enum [ "off" "first" "all" ]);
+        default = null;
+        description = "Whether the bot replies to the original message. null uses the gateway default.";
+      };
+
+      actions = {
+        reactions = lib.mkOption {
+          type = lib.types.nullOr lib.types.bool;
+          default = null;
+          description = "Allow the bot to react to messages.";
+        };
+        sendMessage = lib.mkOption {
+          type = lib.types.nullOr lib.types.bool;
+          default = null;
+          description = "Allow the bot to send messages.";
+        };
+      };
+    };
+
     telegram = {
       enable = lib.mkEnableOption "Telegram channel for the OpenClaw agent";
 
