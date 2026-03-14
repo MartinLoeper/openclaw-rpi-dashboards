@@ -27,7 +27,7 @@ ShellRoot {
         }
     }
 
-    function cycleMs() {
+    property int cycleMs: {
         switch (root.currentState) {
             case "thinking":     return 4000;
             case "responding":   return 2000;
@@ -40,8 +40,7 @@ ShellRoot {
         }
     }
 
-    // hue0 and hue1 in degrees (0-360)
-    function stateHues() {
+    property var stateHues: {
         switch (root.currentState) {
             case "thinking":     return [220, 280];
             case "responding":   return [140, 200];
@@ -53,6 +52,8 @@ ShellRoot {
             default:             return [220, 280];
         }
     }
+
+    property bool active: root.currentState !== "idle"
 
     FileView {
         id: stateFile
@@ -78,125 +79,89 @@ ShellRoot {
 
         property real phase: 0.0
 
-        NumberAnimation on phase {
-            id: phaseAnim
-            from: 0.0
-            to: 1.0
-            duration: root.cycleMs()
-            loops: Animation.Infinite
-            running: root.currentState !== "idle"
+        Timer {
+            id: animTimer
+            interval: 33  // ~30fps
+            repeat: true
+            running: root.active
+            onTriggered: {
+                var step = interval / root.cycleMs;
+                win.phase = (win.phase + step) % 1.0;
+                borderCanvas.requestPaint();
+            }
             onRunningChanged: {
                 if (!running) win.phase = 0.0;
-                else duration = root.cycleMs();
-            }
-        }
-
-        // Re-trigger duration update when state changes
-        onWidthChanged: borderCanvas.requestPaint()
-        onHeightChanged: borderCanvas.requestPaint()
-
-        Connections {
-            target: root
-            function onCurrentStateChanged() {
-                phaseAnim.duration = root.cycleMs();
-                borderCanvas.requestPaint();
             }
         }
 
         Canvas {
             id: borderCanvas
             anchors.fill: parent
-            visible: root.currentState !== "idle"
+            visible: root.active
 
-            // Repaint whenever phase ticks
-            property real phase: win.phase
-            onPhaseChanged: requestPaint()
+            onVisibleChanged: if (visible) requestPaint()
 
             onPaint: {
                 var ctx = getContext("2d");
                 ctx.clearRect(0, 0, width, height);
 
-                if (root.currentState === "idle") return;
+                if (!root.active) return;
 
-                var hues = root.stateHues();
+                var hues = root.stateHues;
                 var h0 = hues[0];
                 var h1 = hues[1];
                 var ph = win.phase;
                 var isDisconnected = root.currentState === "disconnected";
 
-                var coreWidth = 8;
-                var glowWidth = 24;
+                var coreWidth = 6;
+                var glowWidth = 20;
                 var halfCore = coreWidth / 2;
-                var halfGlow = glowWidth / 2;
 
-                // Perimeter segments: top, right, bottom, left
-                // total perimeter = 2*(w+h)
                 var W = width;
                 var H = height;
                 var perim = 2 * (W + H);
+                var segsPerEdge = 40;
 
-                // Helper: get color at normalized position t (0-1 around perimeter)
-                // offset by phase so it flows
-                function colorAt(t) {
+                function hslColor(t, alpha) {
                     var p = (t + ph) % 1.0;
-                    // map p into hue range
+                    if (p < 0) p += 1.0;
                     var hue;
                     if (isDisconnected) {
                         hue = 0;
                     } else {
-                        // repeat the hue band 3 times around perimeter for visual richness
                         var cycle = (p * 3) % 1.0;
                         hue = h0 + (h1 - h0) * cycle;
                     }
                     var sat = isDisconnected ? 10 : 90;
                     var lum = isDisconnected ? 30 : 55;
+                    if (alpha < 1.0) {
+                        return "hsla(" + Math.round(hue) + "," + sat + "%," + lum + "%," + alpha + ")";
+                    }
                     return "hsl(" + Math.round(hue) + "," + sat + "%," + lum + "%)";
                 }
 
-                function glowColorAt(t) {
-                    var p = (t + ph) % 1.0;
-                    var hue;
-                    if (isDisconnected) {
-                        hue = 0;
-                    } else {
-                        var cycle = (p * 3) % 1.0;
-                        hue = h0 + (h1 - h0) * cycle;
-                    }
-                    var sat = isDisconnected ? 10 : 80;
-                    return "hsla(" + Math.round(hue) + "," + sat + "%,50%,0.25)";
-                }
-
-                // Draw a gradient strip along a line from (x1,y1) to (x2,y2)
-                // tStart/tEnd: normalized perimeter position of this segment
-                function drawEdge(x1, y1, x2, y2, tStart, tEnd, isHoriz) {
-                    var steps = Math.max(Math.round(isHoriz ? Math.abs(x2-x1) : Math.abs(y2-y1)), 4);
+                function drawEdge(x1, y1, x2, y2, tStart, tEnd) {
                     var segLen = tEnd - tStart;
-                    for (var i = 0; i < steps; i++) {
-                        var t0 = tStart + segLen * (i / steps);
-                        var t1 = tStart + segLen * ((i + 1) / steps);
-                        var cx0 = x1 + (x2 - x1) * (i / steps);
-                        var cx1 = x1 + (x2 - x1) * ((i + 1) / steps);
-                        var cy0 = y1 + (y2 - y1) * (i / steps);
-                        var cy1 = y1 + (y2 - y1) * ((i + 1) / steps);
+                    for (var i = 0; i < segsPerEdge; i++) {
+                        var frac0 = i / segsPerEdge;
+                        var frac1 = (i + 1) / segsPerEdge;
+                        var t0 = tStart + segLen * frac0;
+                        var t1 = tStart + segLen * frac1;
+                        var cx0 = x1 + (x2 - x1) * frac0;
+                        var cx1 = x1 + (x2 - x1) * frac1;
+                        var cy0 = y1 + (y2 - y1) * frac0;
+                        var cy1 = y1 + (y2 - y1) * frac1;
 
-                        var grad = ctx.createLinearGradient(cx0, cy0, cx1, cy1);
-                        grad.addColorStop(0, colorAt(t0));
-                        grad.addColorStop(1, colorAt(t1));
-
-                        var glowGrad = ctx.createLinearGradient(cx0, cy0, cx1, cy1);
-                        glowGrad.addColorStop(0, glowColorAt(t0));
-                        glowGrad.addColorStop(1, glowColorAt(t1));
-
-                        // Glow pass (wide, dim)
-                        ctx.strokeStyle = glowGrad;
+                        // Glow pass
+                        ctx.strokeStyle = hslColor((t0 + t1) / 2, 0.2);
                         ctx.lineWidth = glowWidth;
                         ctx.beginPath();
                         ctx.moveTo(cx0, cy0);
                         ctx.lineTo(cx1, cy1);
                         ctx.stroke();
 
-                        // Core pass (narrow, bright)
-                        ctx.strokeStyle = grad;
+                        // Core pass
+                        ctx.strokeStyle = hslColor((t0 + t1) / 2, 1.0);
                         ctx.lineWidth = coreWidth;
                         ctx.beginPath();
                         ctx.moveTo(cx0, cy0);
@@ -205,14 +170,14 @@ ShellRoot {
                     }
                 }
 
-                // top edge: left→right
-                drawEdge(0, halfCore, W, halfCore, 0, W/perim, true);
-                // right edge: top→bottom
-                drawEdge(W - halfCore, 0, W - halfCore, H, W/perim, (W+H)/perim, false);
-                // bottom edge: right→left
-                drawEdge(W, H - halfCore, 0, H - halfCore, (W+H)/perim, (W+2*H)/perim, true);
-                // left edge: bottom→top
-                drawEdge(halfCore, H, halfCore, 0, (W+2*H)/perim, 1.0, false);
+                // top: left → right
+                drawEdge(0, halfCore, W, halfCore, 0, W / perim);
+                // right: top → bottom
+                drawEdge(W - halfCore, 0, W - halfCore, H, W / perim, (W + H) / perim);
+                // bottom: right → left
+                drawEdge(W, H - halfCore, 0, H - halfCore, (W + H) / perim, (2 * W + H) / perim);
+                // left: bottom → top
+                drawEdge(halfCore, H, halfCore, 0, (2 * W + H) / perim, 1.0);
             }
         }
 
@@ -255,7 +220,7 @@ ShellRoot {
 
             Text {
                 anchors.centerIn: parent
-                text: "⏹ Stop"
+                text: "Stop"
                 color: "white"
                 font.pixelSize: 18
                 font.family: "sans-serif"
