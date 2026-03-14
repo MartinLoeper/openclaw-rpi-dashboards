@@ -180,6 +180,7 @@
               homeserver = "https://matrix.glinq.org";
               encryption = true;
               dm.policy = "pairing";
+              groupPolicy = "open";
               replyToMode = "all";
               actions = {
                 reactions = true;
