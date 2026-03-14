@@ -21,12 +21,12 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
-	ewwConfigDir := os.Getenv("CLAWPI_EWW_CONFIG")
-	if ewwConfigDir == "" {
-		log.Fatal("CLAWPI_EWW_CONFIG not set")
+	stateFile := os.Getenv("CLAWPI_STATE_FILE")
+	if stateFile == "" {
+		log.Fatal("CLAWPI_STATE_FILE not set")
 	}
 
-	ctrl := eww.NewController(ewwConfigDir)
+	ctrl := eww.NewController(stateFile)
 
 	// Start web server with controller for TTS API
 	go func() {

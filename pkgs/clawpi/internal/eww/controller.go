@@ -1,10 +1,9 @@
 package eww
 
 import (
-	"fmt"
+	"encoding/json"
 	"log"
-	"os/exec"
-	"strings"
+	"os"
 	"sync"
 )
 
@@ -22,14 +21,18 @@ const (
 )
 
 type Controller struct {
-	configDir string
-	mu        sync.Mutex
-	state     State
+	stateFile  string
+	mu         sync.Mutex
+	state      State
+	toolName   string
+	ttsPlaying bool
+	recording  bool
+	message    string
 }
 
-func NewController(configDir string) *Controller {
+func NewController(stateFile string) *Controller {
 	return &Controller{
-		configDir: configDir,
+		stateFile: stateFile,
 		state:     StateIdle,
 	}
 }
@@ -45,56 +48,57 @@ func (c *Controller) SetState(state State) {
 	}
 
 	log.Printf("state: %s -> %s", prev, state)
-	c.update("clawpi_state", string(state))
-
-	if state == StateIdle {
-		go c.ewwCmd("close", "status-overlay")
-	} else if prev == StateIdle {
-		go c.ewwCmd("open", "status-overlay")
-	}
+	c.writeStateFile()
 }
 
 func (c *Controller) SetToolName(name string) {
-	c.update("clawpi_tool_name", name)
+	c.mu.Lock()
+	c.toolName = name
+	c.mu.Unlock()
+	c.writeStateFile()
 }
 
 func (c *Controller) SetMessage(msg string) {
-	c.update("clawpi_message", msg)
+	c.mu.Lock()
+	c.message = msg
+	c.mu.Unlock()
+	c.writeStateFile()
 }
 
 func (c *Controller) SetTTSPlaying(playing bool) {
-	if playing {
-		c.update("clawpi_tts_playing", "true")
-		go c.ewwCmd("open", "tts-stop-overlay")
-	} else {
-		c.update("clawpi_tts_playing", "false")
-		go c.ewwCmd("close", "tts-stop-overlay")
-	}
+	c.mu.Lock()
+	c.ttsPlaying = playing
+	c.mu.Unlock()
+	c.writeStateFile()
 }
 
 func (c *Controller) SetRecording(recording bool) {
-	if recording {
-		c.update("clawpi_recording", "true")
-		go c.ewwCmd("open", "recording-overlay")
-	} else {
-		c.update("clawpi_recording", "false")
-		go c.ewwCmd("close", "recording-overlay")
-	}
+	c.mu.Lock()
+	c.recording = recording
+	c.mu.Unlock()
+	c.writeStateFile()
 }
 
-func (c *Controller) update(variable, value string) {
-	arg := fmt.Sprintf("%s=%s", variable, value)
-	if err := c.ewwCmd("update", arg); err != nil {
-		log.Printf("eww update %s: %v", arg, err)
-	}
-}
+func (c *Controller) writeStateFile() {
+	c.mu.Lock()
+	data, err := json.Marshal(map[string]any{
+		"state":      string(c.state),
+		"toolName":   c.toolName,
+		"ttsPlaying": c.ttsPlaying,
+		"recording":  c.recording,
+		"message":    c.message,
+	})
+	path := c.stateFile
+	c.mu.Unlock()
 
-func (c *Controller) ewwCmd(args ...string) error {
-	fullArgs := append([]string{"--config", c.configDir}, args...)
-	cmd := exec.Command("eww", fullArgs...)
-	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%s: %s", strings.Join(args, " "), strings.TrimSpace(string(output)))
+		log.Printf("eww: marshal state: %v", err)
+		return
 	}
-	return nil
+	if path == "" {
+		return
+	}
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		log.Printf("eww: write state file: %v", err)
+	}
 }

@@ -26,6 +26,7 @@
         --remote-debugging-port=9222 \
         --touch-events=enabled \
         --enable-features=TouchpadOverscrollHistoryNavigation \
+        --disable-features=Translate \
         http://localhost:3100 &
     '';
   };

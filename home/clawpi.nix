@@ -8,21 +8,21 @@ in
 {
   home.packages = [
     pkgs.clawpi
-    pkgs.eww
-    pkgs.grim  # Wayland screenshot tool (captures full compositor output incl. Eww overlays)
+    pkgs.quickshell
+    pkgs.grim  # Wayland screenshot tool
   ];
 
-  # Eww daemon — runs independently, clawpi sends updates via the socket
-  systemd.user.services.eww = {
+  # Quickshell border animation — reads /run/user/1000/clawpi-state.json
+  systemd.user.services.quickshell = {
     Unit = {
-      Description = "Eww widget daemon";
+      Description = "Quickshell border animation";
       After = [ "graphical-session.target" ];
       PartOf = [ "graphical-session.target" ];
     };
     Install.WantedBy = [ "graphical-session.target" ];
     Service = {
       Type = "simple";
-      ExecStart = "${pkgs.eww}/bin/eww daemon --config ${pkgs.clawpi}/share/clawpi/eww --no-daemonize";
+      ExecStart = "${pkgs.quickshell}/bin/quickshell -p ${pkgs.clawpi}/share/clawpi/quickshell";
       Restart = "on-failure";
       RestartSec = "3s";
     };
@@ -33,12 +33,12 @@ in
       Description = "ClawPi overlay daemon";
       After = [
         "openclaw-gateway.service"
-        "eww.service"
+        "quickshell.service"
         "graphical-session.target"
       ];
       Wants = [
         "openclaw-gateway.service"
-        "eww.service"
+        "quickshell.service"
       ];
       PartOf = [ "graphical-session.target" ];
     };
@@ -51,7 +51,7 @@ in
       EnvironmentFile = "/var/lib/kiosk/.openclaw/gateway-token.env";
       Environment = [
         "CLAWPI_GATEWAY_URL=ws://localhost:18789"
-        "CLAWPI_EWW_CONFIG=${pkgs.clawpi}/share/clawpi/eww"
+        "CLAWPI_STATE_FILE=/run/user/1000/clawpi-state.json"
         "CLAWPI_WEB_ADDR=:3100"
         "CLAWPI_CANVAS_DIR=${canvasDir}"
         "CLAWPI_CANVAS_ARCHIVE_DIR=${canvasArchiveDir}"

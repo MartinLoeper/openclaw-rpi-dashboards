@@ -1,4 +1,4 @@
-{ lib, buildGoModule, eww, makeWrapper }:
+{ lib, buildGoModule, makeWrapper }:
 
 buildGoModule {
   pname = "clawpi";
@@ -14,13 +14,12 @@ buildGoModule {
 
   postInstall = ''
     mkdir -p $out/share/clawpi
-    cp -r ${./eww} $out/share/clawpi/eww
-    wrapProgram $out/bin/clawpi \
-      --prefix PATH : ${lib.makeBinPath [ eww ]}
+    cp -r ${./quickshell} $out/share/clawpi/quickshell
+    wrapProgram $out/bin/clawpi
   '';
 
   meta = {
-    description = "ClawPi overlay daemon — connects to OpenClaw gateway and drives Eww status overlays";
+    description = "ClawPi overlay daemon — connects to OpenClaw gateway and drives Quickshell border animations";
     license = lib.licenses.mit;
     platforms = lib.platforms.linux;
   };
