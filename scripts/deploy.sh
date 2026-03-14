@@ -13,6 +13,7 @@ TARGET_USER="nixos"
 FLAKE_ATTR="${FLAKE_ATTR:-rpi5}"
 KEY_FILE="${SCRIPT_DIR}/../id_ed25519_rpi5"
 REMOTE_CACHE="${REMOTE_CACHE:-}"
+REMOTE_CACHE_KEY="${REMOTE_CACHE_KEY:-${HOME}/.ssh/id_ed25519}"
 
 if [ ! -f "${KEY_FILE}" ]; then
   echo "Error: SSH key not found at ${KEY_FILE}"
@@ -36,8 +37,9 @@ echo ""
 if [ -n "${REMOTE_CACHE}" ]; then
   echo "  Remote cache: root@${REMOTE_CACHE}"
   echo "Copying build closure from remote cache..."
-  REMOTE_PATH="$(ssh "root@${REMOTE_CACHE}" readlink -f clawpi/result)"
-  nix copy --from "ssh://root@${REMOTE_CACHE}" "${REMOTE_PATH}" --no-check-sigs
+  REMOTE_PATH="$(ssh -i "${REMOTE_CACHE_KEY}" -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes "root@${REMOTE_CACHE}" readlink -f clawpi/result)"
+  NIX_SSHOPTS="-i ${REMOTE_CACHE_KEY} -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes" \
+    nix copy --from "ssh://root@${REMOTE_CACHE}" "${REMOTE_PATH}" --no-check-sigs
   echo "Done. Closure available locally."
 fi
 
