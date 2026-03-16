@@ -3,7 +3,7 @@
 ## Deployment
 
 - **Deploy command:** `./scripts/deploy.sh [host] --specialisation kiosk`
-- **Flake configuration:** Set via `FLAKE_ATTR` env var (defaults to `rpi5`). Example: `FLAKE_ATTR=rpi5-matrix-debug ./scripts/deploy.sh ...` — do NOT pass `--flake` as a CLI argument.
+- **Flake configuration:** Set via `FLAKE_ATTR` env var (defaults to `rpi5`). Example: `FLAKE_ATTR=rpi5-matrix-debug ./scripts/deploy.sh ...` — do NOT pass `--flake` as a CLI argument. Use `rpi4` for Raspberry Pi 4B targets.
 - **Default specialisation:** `kiosk` (always deploy with `--specialisation kiosk` unless told otherwise)
 - See `docs/deployment.md` for full deployment workflow, specialisation switching, and known issues.
 - See `docs/getting-started.md` for prerequisites and initial setup.
@@ -40,9 +40,9 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
 
 ## Architecture
 
-- **NixOS flake** with two configurations sharing `commonModules`:
-  - `rpi5` — for live deploys via `nixos-rebuild`
-  - `rpi5-installer` — for building flashable SD images
+- **NixOS flake** with configurations sharing `commonModules` (application layer) and per-board hardware modules:
+  - `rpi5` / `rpi4` — for live deploys via `nixos-rebuild`
+  - `rpi5-installer` / `rpi4-installer` — for building flashable SD images
 - **Kiosk specialisation** — labwc + Chromium kiosk mode, activated at runtime or via deploy (see `docs/canvas.md`)
 - Base system is CLI-only; graphical stack is opt-in via the specialisation
 - **Known issue:** specialisation may not activate on deploy — see `docs/deployment.md` for the manual activation procedure.
@@ -80,7 +80,7 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
 
 ## NixOS Specifics
 
-- Bootloader: `"kernel"` (RPi kernel-based, supports generational rollback)
+- Bootloader: `"kernel"` for Pi 5 (generational rollback), `"uboot"` for Pi 4
 - State version: `25.05`
 - Built on [nixos-raspberrypi](https://github.com/nvmd/nixos-raspberrypi) flake
 - PipeWire with ALSA + PulseAudio compat for HDMI audio

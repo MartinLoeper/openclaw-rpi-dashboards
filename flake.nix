@@ -17,20 +17,13 @@
 
   outputs = { self, nixos-raspberrypi, nix-openclaw, home-manager, ... }:
     let
+      # Hardware-independent application modules shared by all configs
       commonModules = [
-        {
-          imports = with nixos-raspberrypi.nixosModules; [
-            raspberry-pi-5.base
-            raspberry-pi-5.page-size-16k
-            raspberry-pi-5.display-vc4
-          ];
-        }
         {
           nixpkgs.overlays = [
             nix-openclaw.overlays.default
             (import ./overlays/openclaw-gateway-fix.nix)
             (import ./overlays/clawpi.nix)
-
           ];
         }
         home-manager.nixosModules.home-manager
@@ -55,19 +48,60 @@
         ./modules/voice.nix
       ];
 
-      commonArgs = {
-        specialArgs = { inherit nixos-raspberrypi; };
-        modules = commonModules;
-      };
+      # Raspberry Pi 5 hardware modules
+      pi5Modules = [
+        {
+          imports = with nixos-raspberrypi.nixosModules; [
+            raspberry-pi-5.base
+            raspberry-pi-5.page-size-16k
+            raspberry-pi-5.display-vc4
+          ];
+          boot.loader.raspberry-pi.bootloader = "kernel";
+          networking.hostName = "openclaw-rpi5";
+        }
+      ];
+
+      # Raspberry Pi 4 hardware modules
+      pi4Modules = [
+        {
+          imports = with nixos-raspberrypi.nixosModules; [
+            raspberry-pi-4.base
+            raspberry-pi-4.display-vc4
+          ];
+          boot.loader.raspberry-pi.bootloader = "uboot";
+          networking.hostName = "openclaw-rpi4";
+        }
+      ];
+
+      specialArgs = { inherit nixos-raspberrypi; };
+
+      # Installer-specific modules (shared between Pi 4 and Pi 5 installer configs)
+      installerModules = [
+        nixos-raspberrypi.nixosModules.sd-image
+        "${nixos-raspberrypi.inputs.nixpkgs}/nixos/modules/profiles/installation-device.nix"
+        {
+          boot.swraid.enable = nixos-raspberrypi.inputs.nixpkgs.lib.mkForce false;
+          installer.cloneConfig = false;
+        }
+      ];
     in
     {
       # For ongoing deploys via nixos-rebuild (./deploy.sh)
-      nixosConfigurations.rpi5 = nixos-raspberrypi.lib.nixosSystem commonArgs;
+      nixosConfigurations.rpi5 = nixos-raspberrypi.lib.nixosSystem {
+        inherit specialArgs;
+        modules = pi5Modules ++ commonModules;
+      };
+
+      # Raspberry Pi 4B — for ongoing deploys
+      nixosConfigurations.rpi4 = nixos-raspberrypi.lib.nixosSystem {
+        inherit specialArgs;
+        modules = pi4Modules ++ commonModules;
+      };
 
       # With Telegram channel + audio transcription enabled
       nixosConfigurations.rpi5-telegram = nixos-raspberrypi.lib.nixosSystem {
-        specialArgs = commonArgs.specialArgs;
-        modules = commonArgs.modules ++ [
+        inherit specialArgs;
+        modules = pi5Modules ++ commonModules ++ [
           {
             services.clawpi.agent.documents.hardwareAwareness.enable = true;
             services.clawpi.canvas.tmpfs = false;
@@ -111,8 +145,8 @@
 
       # Telegram + debug tools (speaker-test, etc.)
       nixosConfigurations.rpi5-telegram-debug = nixos-raspberrypi.lib.nixosSystem {
-        specialArgs = commonArgs.specialArgs;
-        modules = commonArgs.modules ++ [
+        inherit specialArgs;
+        modules = pi5Modules ++ commonModules ++ [
           {
             services.clawpi.debug = true;
             services.clawpi.agent.documents.hardwareAwareness.enable = true;
@@ -155,8 +189,8 @@
 
       # Matrix + debug tools
       nixosConfigurations.rpi5-matrix-debug = nixos-raspberrypi.lib.nixosSystem {
-        specialArgs = commonArgs.specialArgs;
-        modules = commonArgs.modules ++ [
+        inherit specialArgs;
+        modules = pi5Modules ++ commonModules ++ [
           {
             services.clawpi.debug = true;
             services.clawpi.agent.documents.hardwareAwareness.enable = true;
@@ -193,19 +227,21 @@
 
       # For building flashable SD images (./build.sh)
       nixosConfigurations.rpi5-installer = nixos-raspberrypi.lib.nixosSystem {
-        specialArgs = commonArgs.specialArgs;
-        modules = commonArgs.modules ++ [
-          nixos-raspberrypi.nixosModules.sd-image
-          "${nixos-raspberrypi.inputs.nixpkgs}/nixos/modules/profiles/installation-device.nix"
-          {
-            boot.swraid.enable = nixos-raspberrypi.inputs.nixpkgs.lib.mkForce false;
-            installer.cloneConfig = false;
-          }
-        ];
+        inherit specialArgs;
+        modules = pi5Modules ++ commonModules ++ installerModules;
+      };
+
+      # Raspberry Pi 4B installer image
+      nixosConfigurations.rpi4-installer = nixos-raspberrypi.lib.nixosSystem {
+        inherit specialArgs;
+        modules = pi4Modules ++ commonModules ++ installerModules;
       };
 
       installerImages.rpi5 =
         self.nixosConfigurations.rpi5-installer.config.system.build.sdImage;
+
+      installerImages.rpi4 =
+        self.nixosConfigurations.rpi4-installer.config.system.build.sdImage;
 
       devShells.x86_64-linux.default =
         let

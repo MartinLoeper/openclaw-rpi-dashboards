@@ -24,7 +24,7 @@ boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
 
 **Other distros:** install `qemu-user-static` and register aarch64 via binfmt_misc. See [NixOS Wiki — Cross Compiling](https://nixos.wiki/wiki/Cross_Compiling) for details.
 
-> **Note:** If you are building on a native **aarch64** host (e.g. Apple Silicon with a Linux VM, a Hetzner ARM server, or another Raspberry Pi), no emulation is needed.
+> **Note:** If you are building on a native **aarch64** host (e.g. Apple Silicon with a Linux VM, a Hetzner ARM server, or another Raspberry Pi), no emulation is needed. Building on a Hetzner ARM server is recommended to avoid slow QEMU cross-compilation — see [Deployment](deployment.md) for details.
 
 ### Disk Space
 
@@ -36,7 +36,7 @@ An SSH client is required for deploying to the Pi. `ssh-keygen` is used during i
 
 ### mDNS Resolution
 
-The Pi advertises itself as `openclaw-rpi5.local` via Avahi. Your workstation also needs mDNS resolution to find it:
+The Pi advertises itself via Avahi (`openclaw-rpi5.local` or `openclaw-rpi4.local`). Your workstation also needs mDNS resolution to find it:
 
 **NixOS:**
 
@@ -56,20 +56,14 @@ services.avahi = {
 
 ## Initial Setup
 
-### 1. Generate SSH Key
+### 1. Flash the SD Card
 
-```sh
-./scripts/setup-ssh.sh
-```
-
-This generates an Ed25519 key pair (`id_ed25519_rpi5` in the repo root, gitignored) and prints instructions for copying it to the Pi.
-
-### 2. Flash the SD Card
-
-Build the installer image:
+Build the installer image. Use `rpi5` for Raspberry Pi 5 or `rpi4` for Raspberry Pi 4B:
 
 ```sh
 nix build .#installerImages.rpi5 --show-trace -L
+# or for Pi 4B:
+nix build .#installerImages.rpi4 --show-trace -L
 ```
 
 Flash it to the SD card:
@@ -82,44 +76,56 @@ Flash it to the SD card:
 ./scripts/flash.sh /dev/sdX
 ```
 
-### 3. First Boot
+### 2. First Boot
 
 Insert the SD card, connect Ethernet, and power on the Pi. The partition table expands automatically on first boot. The system boots into CLI mode by default.
 
-- **Hostname:** `openclaw-rpi5`
-- **User:** `nixos` (wheel group, passwordless sudo)
-- **SSH:** enabled, root login allowed
+| | Pi 5 | Pi 4B |
+|---|---|---|
+| **Hostname** | `openclaw-rpi5` | `openclaw-rpi4` |
+| **User** | `nixos` (wheel, passwordless sudo) | `nixos` (wheel, passwordless sudo) |
+| **SSH** | enabled, root login allowed | enabled, root login allowed |
 
-1. Set a password for the `nixos` user (needed for the SSH key copy step):
+Set a password for the `nixos` user (needed to copy the SSH key in the next step):
 
-   ```sh
-   # On the Pi (attach a keyboard and monitor)
-   passwd nixos
-   ```
+```sh
+# On the Pi (attach a keyboard and monitor)
+passwd nixos
+```
 
-2. Copy your SSH key to the Pi:
+### 3. Set Up SSH
 
-   ```sh
-   ssh-copy-id -i id_ed25519_rpi5 nixos@openclaw-rpi5.local
-   ```
+Generate a deploy key and copy it to the Pi:
 
-3. Deploy the kiosk specialisation:
+```sh
+./scripts/setup-ssh.sh [hostname]
+# e.g. ./scripts/setup-ssh.sh openclaw-rpi4.local
+# defaults to openclaw-rpi5.local if omitted
+```
 
-   ```sh
-   ./scripts/deploy.sh openclaw-rpi5.local --specialisation kiosk
-   ```
+This generates an Ed25519 key pair (`id_ed25519_rpi5` in the repo root, gitignored) and copies it to the Pi via `ssh-copy-id`. You will be prompted for the `nixos` password set in the previous step.
 
-4. Set up the agent API key (required for AI features):
+### 4. Deploy
 
-   ```sh
-   ./scripts/setup-agent-auth.sh openclaw-rpi5.local
-   ```
+Deploy the kiosk specialisation. Set `FLAKE_ATTR=rpi4` for a Pi 4B:
 
-5. Retrieve the gateway token:
+```sh
+./scripts/deploy.sh openclaw-rpi5.local --specialisation kiosk
+# or for Pi 4B:
+FLAKE_ATTR=rpi4 ./scripts/deploy.sh openclaw-rpi4.local --specialisation kiosk
+```
 
-   ```sh
-   ./scripts/gateway-token.sh openclaw-rpi5.local
-   ```
+### 5. Set Up Agent Auth
+
+```sh
+./scripts/setup-agent-auth.sh openclaw-rpi5.local
+```
+
+### 6. Retrieve the Gateway Token
+
+```sh
+./scripts/gateway-token.sh openclaw-rpi5.local
+```
 
 ## Next Steps
 

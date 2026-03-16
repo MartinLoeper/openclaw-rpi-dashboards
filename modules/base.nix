@@ -1,6 +1,4 @@
 { pkgs, ... }: {
-  boot.loader.raspberry-pi.bootloader = "kernel";
-
   fileSystems = {
     "/" = {
       device = "/dev/disk/by-label/NIXOS_SD";
@@ -13,8 +11,6 @@
       options = [ "noatime" "noauto" "x-systemd.automount" "x-systemd.idle-timeout=1min" ];
     };
   };
-
-  networking.hostName = "openclaw-rpi5";
 
   users.users.nixos = {
     isNormalUser = true;
