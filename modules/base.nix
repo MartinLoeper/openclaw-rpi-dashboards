@@ -62,6 +62,12 @@
     "d /tmp/openclaw 0755 kiosk kiosk -"
   ];
 
+  # 1 GB swap file — critical for the 1 GB Pi 4B, helpful everywhere
+  swapDevices = [{
+    device = "/var/swapfile";
+    size = 1024; # MiB
+  }];
+
   security.rtkit.enable = true;
 
   security.sudo.wheelNeedsPassword = false;
