@@ -165,26 +165,21 @@
               { id = "openrouter/minimax/minimax-m2.5"; name = "MiniMax M2.5"; }
               { id = "openrouter/google/gemini-2.5-flash-lite"; name = "Gemini 2.5 Flash Lite"; }
             ];
-            services.clawpi.telegram = {
-              enable = true;
-
-              # Workaround for https://github.com/openclaw/openclaw/issues/34790
-              # Both properties prevent partial message edits in Telegram.
-              # Revert streaming to "partial" and blockStreaming to null once fixed.
-              streaming = "block";
-              blockStreaming = true;
-
-              # Personal preference: full reactions and reply-to-all
-              replyToMode = "all";
-              ackReaction = "👀";
-              reactionLevel = "extensive";
-              reactionNotifications = "all";
-              actions = {
-                reactions = true;
-                sendMessage = true;
-                sticker = true;
-              };
-            };
+            # Telegram disabled — reduces load on Pi 4B
+            # services.clawpi.telegram = {
+            #   enable = true;
+            #   streaming = "block";
+            #   blockStreaming = true;
+            #   replyToMode = "all";
+            #   ackReaction = "👀";
+            #   reactionLevel = "extensive";
+            #   reactionNotifications = "all";
+            #   actions = {
+            #     reactions = true;
+            #     sendMessage = true;
+            #     sticker = true;
+            #   };
+            # };
           }
         ];
       };
