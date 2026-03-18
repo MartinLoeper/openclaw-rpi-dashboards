@@ -15,7 +15,14 @@
     ];
   };
 
-  outputs = { self, nixos-raspberrypi, nix-openclaw, home-manager, ... }:
+  outputs =
+    {
+      self,
+      nixos-raspberrypi,
+      nix-openclaw,
+      home-manager,
+      ...
+    }:
     let
       # Hardware-independent application modules shared by all configs
       commonModules = [
@@ -101,169 +108,240 @@
       # With Telegram channel + audio transcription enabled
       nixosConfigurations.rpi5-telegram = nixos-raspberrypi.lib.nixosSystem {
         inherit specialArgs;
-        modules = pi5Modules ++ commonModules ++ [
-          {
-            services.clawpi.agent.documents.hardwareAwareness.enable = true;
-            services.clawpi.canvas.tmpfs = false;
-            services.clawpi.audio.enable = true;
-            services.clawpi.audio.groq.enable = true;
-            services.clawpi.elevenlabs.enable = true;
-            services.clawpi.voice.enable = true;
-            services.clawpi.voice.threshold = 0.25;
-            services.clawpi.allowedModels = [
-              # Anthropic
-              { id = "anthropic/claude-sonnet-4-5"; name = "Sonnet 4.5"; }
-              { id = "anthropic/claude-haiku-4-5"; name = "Haiku 4.5"; }
-              # OpenRouter
-              { id = "openrouter/moonshotai/kimi-k2.5"; name = "Kimi K2.5"; }
-              { id = "openrouter/minimax/minimax-m2.5"; name = "MiniMax M2.5"; }
-              { id = "openrouter/google/gemini-2.5-flash-lite"; name = "Gemini 2.5 Flash Lite"; }
-            ];
-            services.clawpi.telegram = {
-              enable = true;
+        modules =
+          pi5Modules
+          ++ commonModules
+          ++ [
+            {
+              services.clawpi.agent.documents.hardwareAwareness.enable = true;
+              services.clawpi.canvas.tmpfs = false;
+              services.clawpi.audio.enable = true;
+              services.clawpi.audio.groq.enable = true;
+              services.clawpi.elevenlabs.enable = true;
+              services.clawpi.voice.enable = true;
+              services.clawpi.voice.threshold = 0.25;
+              services.clawpi.allowedModels = [
+                # Anthropic
+                {
+                  id = "anthropic/claude-sonnet-4-5";
+                  name = "Sonnet 4.5";
+                }
+                {
+                  id = "anthropic/claude-haiku-4-5";
+                  name = "Haiku 4.5";
+                }
+                # OpenRouter
+                {
+                  id = "openrouter/moonshotai/kimi-k2.5";
+                  name = "Kimi K2.5";
+                }
+                {
+                  id = "openrouter/minimax/minimax-m2.5";
+                  name = "MiniMax M2.5";
+                }
+                {
+                  id = "openrouter/google/gemini-2.5-flash-lite";
+                  name = "Gemini 2.5 Flash Lite";
+                }
+              ];
+              services.clawpi.telegram = {
+                enable = true;
 
-              # Workaround for https://github.com/openclaw/openclaw/issues/34790
-              # Both properties prevent partial message edits in Telegram.
-              # Revert streaming to "partial" and blockStreaming to null once fixed.
-              streaming = "block";
-              blockStreaming = true;
+                # Workaround for https://github.com/openclaw/openclaw/issues/34790
+                # Both properties prevent partial message edits in Telegram.
+                # Revert streaming to "partial" and blockStreaming to null once fixed.
+                streaming = "block";
+                blockStreaming = true;
 
-              # Personal preference: full reactions and reply-to-all
-              replyToMode = "all";
-              ackReaction = "👀";
-              reactionLevel = "extensive";
-              reactionNotifications = "all";
-              actions = {
-                reactions = true;
-                sendMessage = true;
-                sticker = true;
+                # Personal preference: full reactions and reply-to-all
+                replyToMode = "all";
+                ackReaction = "👀";
+                reactionLevel = "extensive";
+                reactionNotifications = "all";
+                actions = {
+                  reactions = true;
+                  sendMessage = true;
+                  sticker = true;
+                };
               };
-            };
-          }
-        ];
+            }
+          ];
       };
 
       # Raspberry Pi 4B with Telegram channel + audio transcription
       nixosConfigurations.rpi4-telegram = nixos-raspberrypi.lib.nixosSystem {
         inherit specialArgs;
-        modules = pi4Modules ++ commonModules ++ [
-          {
-            services.clawpi.agent.documents.hardwareAwareness.enable = true;
-            services.clawpi.canvas.tmpfs = false;
-            services.clawpi.audio.enable = true;
-            services.clawpi.audio.groq.enable = true;
-            services.clawpi.elevenlabs.enable = true;
-            # Voice pipeline disabled — too heavy for Pi 4B (continuous ONNX hotword detection)
-            # services.clawpi.voice.enable = true;
-            # services.clawpi.voice.threshold = 0.25;
-            services.clawpi.allowedModels = [
-              # Anthropic
-              { id = "anthropic/claude-sonnet-4-5"; name = "Sonnet 4.5"; }
-              { id = "anthropic/claude-haiku-4-5"; name = "Haiku 4.5"; }
-              # OpenRouter
-              { id = "openrouter/moonshotai/kimi-k2.5"; name = "Kimi K2.5"; }
-              { id = "openrouter/minimax/minimax-m2.5"; name = "MiniMax M2.5"; }
-              { id = "openrouter/google/gemini-2.5-flash-lite"; name = "Gemini 2.5 Flash Lite"; }
-            ];
-            # Telegram disabled — reduces load on Pi 4B
-            # services.clawpi.telegram = {
-            #   enable = true;
-            #   streaming = "block";
-            #   blockStreaming = true;
-            #   replyToMode = "all";
-            #   ackReaction = "👀";
-            #   reactionLevel = "extensive";
-            #   reactionNotifications = "all";
-            #   actions = {
-            #     reactions = true;
-            #     sendMessage = true;
-            #     sticker = true;
-            #   };
-            # };
-          }
-        ];
+        modules =
+          pi4Modules
+          ++ commonModules
+          ++ [
+            {
+              services.clawpi.agent.documents.hardwareAwareness.enable = true;
+              services.clawpi.canvas.tmpfs = false;
+              services.clawpi.audio.enable = true;
+              services.clawpi.audio.groq.enable = true;
+              services.clawpi.elevenlabs.enable = true;
+              # Voice pipeline disabled — too heavy for Pi 4B (continuous ONNX hotword detection)
+              # services.clawpi.voice.enable = true;
+              # services.clawpi.voice.threshold = 0.25;
+              services.clawpi.allowedModels = [
+                # Anthropic
+                {
+                  id = "anthropic/claude-sonnet-4-5";
+                  name = "Sonnet 4.5";
+                }
+                {
+                  id = "anthropic/claude-haiku-4-5";
+                  name = "Haiku 4.5";
+                }
+                # OpenRouter
+                {
+                  id = "openrouter/moonshotai/kimi-k2.5";
+                  name = "Kimi K2.5";
+                }
+                {
+                  id = "openrouter/minimax/minimax-m2.5";
+                  name = "MiniMax M2.5";
+                }
+                {
+                  id = "openrouter/google/gemini-2.5-flash-lite";
+                  name = "Gemini 2.5 Flash Lite";
+                }
+              ];
+              services.clawpi.telegram = {
+                enable = true;
+                streaming = "block";
+                blockStreaming = true;
+                replyToMode = "all";
+                ackReaction = "👀";
+                reactionLevel = "extensive";
+                reactionNotifications = "all";
+                actions = {
+                  reactions = true;
+                  sendMessage = true;
+                  sticker = true;
+                };
+              };
+            }
+          ];
       };
 
       # Telegram + debug tools (speaker-test, etc.)
       nixosConfigurations.rpi5-telegram-debug = nixos-raspberrypi.lib.nixosSystem {
         inherit specialArgs;
-        modules = pi5Modules ++ commonModules ++ [
-          {
-            services.clawpi.debug = true;
-            services.clawpi.agent.documents.hardwareAwareness.enable = true;
-            services.clawpi.canvas.tmpfs = false;
-            services.clawpi.audio.enable = true;
-            services.clawpi.audio.groq.enable = true;
-            services.clawpi.elevenlabs.enable = true;
-            services.clawpi.voice.enable = true;
-            services.clawpi.voice.threshold = 0.25;
-            services.clawpi.allowedModels = [
-              # Anthropic
-              { id = "anthropic/claude-sonnet-4-5"; name = "Sonnet 4.5"; }
-              { id = "anthropic/claude-haiku-4-5"; name = "Haiku 4.5"; }
-              # OpenRouter
-              { id = "openrouter/moonshotai/kimi-k2.5"; name = "Kimi K2.5"; }
-              { id = "openrouter/minimax/minimax-m2.5"; name = "MiniMax M2.5"; }
-              { id = "openrouter/google/gemini-2.5-flash-lite"; name = "Gemini 2.5 Flash Lite"; }
-            ];
-            services.clawpi.telegram = {
-              enable = true;
+        modules =
+          pi5Modules
+          ++ commonModules
+          ++ [
+            {
+              services.clawpi.debug = true;
+              services.clawpi.agent.documents.hardwareAwareness.enable = true;
+              services.clawpi.canvas.tmpfs = false;
+              services.clawpi.audio.enable = true;
+              services.clawpi.audio.groq.enable = true;
+              services.clawpi.elevenlabs.enable = true;
+              services.clawpi.voice.enable = true;
+              services.clawpi.voice.threshold = 0.25;
+              services.clawpi.allowedModels = [
+                # Anthropic
+                {
+                  id = "anthropic/claude-sonnet-4-5";
+                  name = "Sonnet 4.5";
+                }
+                {
+                  id = "anthropic/claude-haiku-4-5";
+                  name = "Haiku 4.5";
+                }
+                # OpenRouter
+                {
+                  id = "openrouter/moonshotai/kimi-k2.5";
+                  name = "Kimi K2.5";
+                }
+                {
+                  id = "openrouter/minimax/minimax-m2.5";
+                  name = "MiniMax M2.5";
+                }
+                {
+                  id = "openrouter/google/gemini-2.5-flash-lite";
+                  name = "Gemini 2.5 Flash Lite";
+                }
+              ];
+              services.clawpi.telegram = {
+                enable = true;
 
-              # Workaround for https://github.com/openclaw/openclaw/issues/34790
-              streaming = "block";
-              blockStreaming = true;
+                # Workaround for https://github.com/openclaw/openclaw/issues/34790
+                streaming = "block";
+                blockStreaming = true;
 
-              # Personal preference
-              replyToMode = "all";
-              ackReaction = "👀";
-              reactionLevel = "extensive";
-              reactionNotifications = "all";
-              actions = {
-                reactions = true;
-                sendMessage = true;
-                sticker = true;
+                # Personal preference
+                replyToMode = "all";
+                ackReaction = "👀";
+                reactionLevel = "extensive";
+                reactionNotifications = "all";
+                actions = {
+                  reactions = true;
+                  sendMessage = true;
+                  sticker = true;
+                };
               };
-            };
-          }
-        ];
+            }
+          ];
       };
 
       # Matrix + debug tools
       nixosConfigurations.rpi5-matrix-debug = nixos-raspberrypi.lib.nixosSystem {
         inherit specialArgs;
-        modules = pi5Modules ++ commonModules ++ [
-          {
-            services.clawpi.debug = true;
-            services.clawpi.agent.documents.hardwareAwareness.enable = true;
-            services.clawpi.canvas.tmpfs = false;
-            services.clawpi.audio.enable = true;
-            services.clawpi.audio.groq.enable = true;
-            services.clawpi.elevenlabs.enable = true;
-            services.clawpi.voice.enable = true;
-            services.clawpi.voice.threshold = 0.25;
-            services.clawpi.allowedModels = [
-              # Anthropic
-              { id = "anthropic/claude-sonnet-4-5"; name = "Sonnet 4.5"; }
-              { id = "anthropic/claude-haiku-4-5"; name = "Haiku 4.5"; }
-              # OpenRouter
-              { id = "openrouter/moonshotai/kimi-k2.5"; name = "Kimi K2.5"; }
-              { id = "openrouter/minimax/minimax-m2.5"; name = "MiniMax M2.5"; }
-              { id = "openrouter/google/gemini-2.5-flash-lite"; name = "Gemini 2.5 Flash Lite"; }
-            ];
-            services.clawpi.matrix = {
-              enable = true;
-              homeserver = "https://matrix.glinq.org";
-              encryption = true;
-              dm.policy = "pairing";
-              groupPolicy = "open";
-              replyToMode = "all";
-              actions = {
-                reactions = true;
-                sendMessage = true;
+        modules =
+          pi5Modules
+          ++ commonModules
+          ++ [
+            {
+              services.clawpi.debug = true;
+              services.clawpi.agent.documents.hardwareAwareness.enable = true;
+              services.clawpi.canvas.tmpfs = false;
+              services.clawpi.audio.enable = true;
+              services.clawpi.audio.groq.enable = true;
+              services.clawpi.elevenlabs.enable = true;
+              services.clawpi.voice.enable = true;
+              services.clawpi.voice.threshold = 0.25;
+              services.clawpi.allowedModels = [
+                # Anthropic
+                {
+                  id = "anthropic/claude-sonnet-4-5";
+                  name = "Sonnet 4.5";
+                }
+                {
+                  id = "anthropic/claude-haiku-4-5";
+                  name = "Haiku 4.5";
+                }
+                # OpenRouter
+                {
+                  id = "openrouter/moonshotai/kimi-k2.5";
+                  name = "Kimi K2.5";
+                }
+                {
+                  id = "openrouter/minimax/minimax-m2.5";
+                  name = "MiniMax M2.5";
+                }
+                {
+                  id = "openrouter/google/gemini-2.5-flash-lite";
+                  name = "Gemini 2.5 Flash Lite";
+                }
+              ];
+              services.clawpi.matrix = {
+                enable = true;
+                homeserver = "https://matrix.glinq.org";
+                encryption = true;
+                dm.policy = "pairing";
+                groupPolicy = "open";
+                replyToMode = "all";
+                actions = {
+                  reactions = true;
+                  sendMessage = true;
+                };
               };
-            };
-          }
-        ];
+            }
+          ];
       };
 
       # For building flashable SD images (./build.sh)
@@ -278,11 +356,9 @@
         modules = pi4Modules ++ commonModules ++ installerModules;
       };
 
-      installerImages.rpi5 =
-        self.nixosConfigurations.rpi5-installer.config.system.build.sdImage;
+      installerImages.rpi5 = self.nixosConfigurations.rpi5-installer.config.system.build.sdImage;
 
-      installerImages.rpi4 =
-        self.nixosConfigurations.rpi4-installer.config.system.build.sdImage;
+      installerImages.rpi4 = self.nixosConfigurations.rpi4-installer.config.system.build.sdImage;
 
       devShells.x86_64-linux.default =
         let
@@ -291,8 +367,12 @@
           screenshot = pkgs.writeShellScriptBin "clawpi-screenshot" ''
             ${python}/bin/python3 ${./scripts/screenshot.py} "$@"
           '';
-        in pkgs.mkShell {
-          packages = [ python screenshot ];
+        in
+        pkgs.mkShell {
+          packages = [
+            python
+            screenshot
+          ];
         };
 
       # Wake word model training (GPU-accelerated via ROCm)
@@ -337,7 +417,8 @@
             ps.pip
             ps.setuptools
           ]);
-        in pkgs.mkShell {
+        in
+        pkgs.mkShell {
           packages = [
             python
             pkgs.git
