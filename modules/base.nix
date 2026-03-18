@@ -53,6 +53,7 @@
   };
 
   nix.settings.trusted-users = [ "nixos" ];
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   # Create /tmp/openclaw for gateway log files (owned by kiosk user).
   # The openclaw-gateway service uses StandardOutput=append:/tmp/openclaw/...
