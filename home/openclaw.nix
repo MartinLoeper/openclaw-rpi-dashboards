@@ -91,8 +91,10 @@ let
     ${groqTranscribe}
     if [ "$rc" -eq 0 ]; then
       ${log "Groq succeeded"}
+      :
     else
       ${log "Groq failed, falling back to local whisper"}
+      :
     fi
     ''}
     # Fall back to local whisper-cli if Groq failed or is disabled
