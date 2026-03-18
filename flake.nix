@@ -143,6 +143,51 @@
         ];
       };
 
+      # Raspberry Pi 4B with Telegram channel + audio transcription
+      nixosConfigurations.rpi4-telegram = nixos-raspberrypi.lib.nixosSystem {
+        inherit specialArgs;
+        modules = pi4Modules ++ commonModules ++ [
+          {
+            services.clawpi.agent.documents.hardwareAwareness.enable = true;
+            services.clawpi.canvas.tmpfs = false;
+            services.clawpi.audio.enable = true;
+            services.clawpi.audio.groq.enable = true;
+            services.clawpi.elevenlabs.enable = true;
+            services.clawpi.voice.enable = true;
+            services.clawpi.voice.threshold = 0.25;
+            services.clawpi.allowedModels = [
+              # Anthropic
+              { id = "anthropic/claude-sonnet-4-5"; name = "Sonnet 4.5"; }
+              { id = "anthropic/claude-haiku-4-5"; name = "Haiku 4.5"; }
+              # OpenRouter
+              { id = "openrouter/moonshotai/kimi-k2.5"; name = "Kimi K2.5"; }
+              { id = "openrouter/minimax/minimax-m2.5"; name = "MiniMax M2.5"; }
+              { id = "openrouter/google/gemini-2.5-flash-lite"; name = "Gemini 2.5 Flash Lite"; }
+            ];
+            services.clawpi.telegram = {
+              enable = true;
+
+              # Workaround for https://github.com/openclaw/openclaw/issues/34790
+              # Both properties prevent partial message edits in Telegram.
+              # Revert streaming to "partial" and blockStreaming to null once fixed.
+              streaming = "block";
+              blockStreaming = true;
+
+              # Personal preference: full reactions and reply-to-all
+              replyToMode = "all";
+              ackReaction = "👀";
+              reactionLevel = "extensive";
+              reactionNotifications = "all";
+              actions = {
+                reactions = true;
+                sendMessage = true;
+                sticker = true;
+              };
+            };
+          }
+        ];
+      };
+
       # Telegram + debug tools (speaker-test, etc.)
       nixosConfigurations.rpi5-telegram-debug = nixos-raspberrypi.lib.nixosSystem {
         inherit specialArgs;

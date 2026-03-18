@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Provision a Telegram bot token on the Pi.
 #
-# Usage: ./scripts/provision-telegram.sh [host]
+# Usage: ./scripts/provision-telegram.sh [host] [key_file]
 #
 # This script:
 # 1. Prompts for the bot token (from @BotFather)
@@ -11,7 +11,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TARGET_HOST="${1:-openclaw-rpi5.local}"
-KEY_FILE="${SCRIPT_DIR}/../id_ed25519_rpi5"
+KEY_FILE="${2:-${SCRIPT_DIR}/../id_ed25519_rpi5}"
 TOKEN_PATH="/var/lib/clawpi/telegram-bot-token"
 
 if [ ! -f "${KEY_FILE}" ]; then
