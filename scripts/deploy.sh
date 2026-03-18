@@ -11,7 +11,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TARGET_HOST="${1:-openclaw-rpi5.local}"
 TARGET_USER="nixos"
 FLAKE_ATTR="${FLAKE_ATTR:-rpi5}"
-KEY_FILE="${KEY_FILE:-${SCRIPT_DIR}/../id_ed25519_${FLAKE_ATTR}}"
+BOARD="${FLAKE_ATTR%%-*}"  # rpi4-telegram → rpi4
+KEY_FILE="${KEY_FILE:-${SCRIPT_DIR}/../id_ed25519_${BOARD}}"
 REMOTE_CACHE="${REMOTE_CACHE:-}"
 REMOTE_CACHE_KEY="${REMOTE_CACHE_KEY:-${HOME}/.ssh/id_ed25519}"
 
