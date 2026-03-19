@@ -237,6 +237,25 @@ ShellRoot {
             }
         }
 
+        // Outer glow (larger, blurred-looking yellow border)
+        Rectangle {
+            id: messageGlow
+            visible: win.messageVisible && win.displayMessage.length > 0
+            anchors {
+                bottom: parent.bottom
+                left: parent.left
+                right: parent.right
+                bottomMargin: 16
+                leftMargin: 16
+                rightMargin: 16
+            }
+            height: Math.min(messageText.implicitHeight + 56, parent.height * 0.45) + 6
+            radius: 19
+            color: "transparent"
+            border.color: Qt.rgba(1.0, 0.85, 0.0, 0.35)
+            border.width: 3
+        }
+
         Rectangle {
             id: messageBox
             visible: win.messageVisible && win.displayMessage.length > 0
@@ -244,13 +263,15 @@ ShellRoot {
                 bottom: parent.bottom
                 left: parent.left
                 right: parent.right
-                bottomMargin: 20
-                leftMargin: 20
-                rightMargin: 20
+                bottomMargin: 19
+                leftMargin: 19
+                rightMargin: 19
             }
             height: Math.min(messageText.implicitHeight + 48, parent.height * 0.45)
             radius: 16
-            color: Qt.rgba(0, 0, 0, 0.8)
+            color: Qt.rgba(0, 0, 0, 0.85)
+            border.color: Qt.rgba(1.0, 0.85, 0.0, 0.6)
+            border.width: 1
 
             Flickable {
                 id: messageFlick
@@ -260,11 +281,23 @@ ShellRoot {
                 }
                 contentHeight: messageText.implicitHeight
                 clip: true
+                interactive: true
+                boundsBehavior: Flickable.StopAtBounds
 
                 // Auto-scroll to bottom as text streams in
                 onContentHeightChanged: {
                     if (contentHeight > height) {
                         contentY = contentHeight - height;
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    propagateComposedEvents: true
+                    onWheel: function(wheel) {
+                        messageFlick.contentY = Math.max(0,
+                            Math.min(messageFlick.contentHeight - messageFlick.height,
+                                messageFlick.contentY - wheel.angleDelta.y));
                     }
                 }
 
