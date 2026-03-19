@@ -7,7 +7,7 @@ import (
 	"syscall"
 
 	"clawpi/internal/config"
-	"clawpi/internal/eww"
+	"clawpi/internal/quickshell"
 	"clawpi/internal/gateway"
 	"clawpi/internal/web"
 )
@@ -26,7 +26,7 @@ func main() {
 		log.Fatal("CLAWPI_STATE_FILE not set")
 	}
 
-	ctrl := eww.NewController(stateFile)
+	ctrl := quickshell.NewController(stateFile)
 
 	// Start web server with controller for TTS API
 	go func() {
@@ -39,26 +39,26 @@ func main() {
 	client.Debug = cfg.Debug
 
 	client.OnConnect = func() {
-		ctrl.SetState(eww.StateIdle)
+		ctrl.SetState(quickshell.StateIdle)
 	}
 
 	client.OnDisconnect = func() {
-		ctrl.SetState(eww.StateDisconnected)
+		ctrl.SetState(quickshell.StateDisconnected)
 	}
 
 	client.OnStateChange = func(state gateway.AgentState, toolName string) {
 		switch state {
 		case gateway.StateIdle:
-			ctrl.SetState(eww.StateIdle)
+			ctrl.SetState(quickshell.StateIdle)
 		case gateway.StateThinking:
-			ctrl.SetState(eww.StateThinking)
+			ctrl.SetState(quickshell.StateThinking)
 		case gateway.StateResponding:
-			ctrl.SetState(eww.StateResponding)
+			ctrl.SetState(quickshell.StateResponding)
 		case gateway.StateToolUse:
 			ctrl.SetToolName(toolName)
-			ctrl.SetState(eww.StateToolUse)
+			ctrl.SetState(quickshell.StateToolUse)
 		case gateway.StateDisconnected:
-			ctrl.SetState(eww.StateDisconnected)
+			ctrl.SetState(quickshell.StateDisconnected)
 		}
 	}
 
@@ -68,7 +68,7 @@ func main() {
 	go func() {
 		sig := <-sigCh
 		log.Printf("received %v, shutting down", sig)
-		ctrl.SetState(eww.StateIdle)
+		ctrl.SetState(quickshell.StateIdle)
 		os.Exit(0)
 	}()
 

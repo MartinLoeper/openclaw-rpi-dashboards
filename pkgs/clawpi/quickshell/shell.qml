@@ -13,6 +13,29 @@ ShellRoot {
     property string toolName: ""
     property string message: ""
 
+    property color borderColor: "#333333"
+    property bool shouldPulse: false
+    property real lightPhase: 0
+
+    NumberAnimation {
+        target: root
+        property: "lightPhase"
+        from: 0; to: 1
+        duration: 2000
+        loops: Animation.Infinite
+        running: root.shouldPulse
+    }
+
+    function sc(lp, pp) {
+        var bc = borderColor;
+        var d = lp - pp;
+        if (d > 0.5) d -= 1.0;
+        if (d < -0.5) d += 1.0;
+        var raw = (Math.cos(d * 2 * Math.PI) + 1) / 2;
+        var t = 0.05 + 0.95 * Math.pow(raw, 3);
+        return Qt.rgba(bc.r * t, bc.g * t, bc.b * t, 1.0);
+    }
+
     function parseState(str) {
         if (!str || str.length === 0) return;
         try {
@@ -27,33 +50,37 @@ ShellRoot {
         }
     }
 
-    property int cycleMs: {
-        switch (root.currentState) {
-            case "thinking":     return 4000;
-            case "responding":   return 2000;
-            case "transcribing": return 1500;
-            case "delivering":   return 2500;
-            case "tool_use":     return 2000;
-            case "error":        return 1000;
-            case "disconnected": return 6000;
-            default:             return 4000;
+    function getColor(state) {
+        switch(state) {
+            case "thinking":     return "#2196F3";
+            case "responding":   return "#00BCD4";
+            case "tool_use":     return "#9C27B0";
+            case "transcribing": return "#FF5722";
+            case "delivering":   return "#00897B";
+            case "error":        return "#F44336";
+            case "disconnected": return "#F44336";
+            default:             return "#333333";
         }
     }
 
-    property var stateHues: {
-        switch (root.currentState) {
-            case "thinking":     return [220, 280];
-            case "responding":   return [140, 200];
-            case "transcribing": return [0,   40];
-            case "delivering":   return [180, 220];
-            case "tool_use":     return [30,  60];
-            case "error":        return [0,   20];
-            case "disconnected": return [0,   0];
-            default:             return [220, 280];
+    function getPulse(state) {
+        switch(state) {
+            case "thinking":
+            case "responding":
+            case "tool_use":
+            case "transcribing":
+            case "delivering":
+            case "error":
+                return true;
+            default:
+                return false;
         }
     }
 
-    property bool active: root.currentState !== "idle"
+    onCurrentStateChanged: {
+        root.borderColor = getColor(currentState);
+        root.shouldPulse = getPulse(currentState);
+    }
 
     FileView {
         id: stateFile
@@ -77,107 +104,63 @@ ShellRoot {
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-        property real phase: 0.0
+        mask: Region {}
 
-        Timer {
-            id: animTimer
-            interval: 33  // ~30fps
-            repeat: true
-            running: root.active
-            onTriggered: {
-                var step = interval / root.cycleMs;
-                win.phase = (win.phase + step) % 1.0;
-                borderCanvas.requestPaint();
-            }
-            onRunningChanged: {
-                if (!running) win.phase = 0.0;
+        // Top edge: pp 0.0 -> 0.25 (increasing, left to right)
+        Rectangle {
+            anchors { top: parent.top; left: parent.left; right: parent.right }
+            height: 10
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.0)    : root.borderColor }
+                GradientStop { position: 0.25;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.0625) : root.borderColor }
+                GradientStop { position: 0.5;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.125)  : root.borderColor }
+                GradientStop { position: 0.75;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.1875) : root.borderColor }
+                GradientStop { position: 1.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.25)   : root.borderColor }
             }
         }
 
-        Canvas {
-            id: borderCanvas
-            anchors.fill: parent
-            visible: root.active
+        // Right edge: pp 0.25 -> 0.5 (increasing, top to bottom)
+        Rectangle {
+            anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
+            width: 10
+            gradient: Gradient {
+                GradientStop { position: 0.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.25)   : root.borderColor }
+                GradientStop { position: 0.25;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.3125) : root.borderColor }
+                GradientStop { position: 0.5;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.375)  : root.borderColor }
+                GradientStop { position: 0.75;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.4375) : root.borderColor }
+                GradientStop { position: 1.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.5)    : root.borderColor }
+            }
+        }
 
-            onVisibleChanged: if (visible) requestPaint()
+        // Bottom edge: pp 0.5 -> 0.75 (increasing, mirrored with xScale)
+        Rectangle {
+            id: bottomEdge
+            anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
+            height: 10
+            transform: Scale { xScale: -1; origin.x: bottomEdge.width / 2 }
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.5)    : root.borderColor }
+                GradientStop { position: 0.25;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.5625) : root.borderColor }
+                GradientStop { position: 0.5;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.625)  : root.borderColor }
+                GradientStop { position: 0.75;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.6875) : root.borderColor }
+                GradientStop { position: 1.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.75)   : root.borderColor }
+            }
+        }
 
-            onPaint: {
-                var ctx = getContext("2d");
-                ctx.clearRect(0, 0, width, height);
-
-                if (!root.active) return;
-
-                var hues = root.stateHues;
-                var h0 = hues[0];
-                var h1 = hues[1];
-                var ph = win.phase;
-                var isDisconnected = root.currentState === "disconnected";
-
-                var coreWidth = 6;
-                var glowWidth = 20;
-                var halfCore = coreWidth / 2;
-
-                var W = width;
-                var H = height;
-                var perim = 2 * (W + H);
-                var segsPerEdge = 40;
-
-                function hslColor(t, alpha) {
-                    var p = (t + ph) % 1.0;
-                    if (p < 0) p += 1.0;
-                    var hue;
-                    if (isDisconnected) {
-                        hue = 0;
-                    } else {
-                        var cycle = (p * 3) % 1.0;
-                        hue = h0 + (h1 - h0) * cycle;
-                    }
-                    var sat = isDisconnected ? 10 : 90;
-                    var lum = isDisconnected ? 30 : 55;
-                    if (alpha < 1.0) {
-                        return "hsla(" + Math.round(hue) + "," + sat + "%," + lum + "%," + alpha + ")";
-                    }
-                    return "hsl(" + Math.round(hue) + "," + sat + "%," + lum + "%)";
-                }
-
-                function drawEdge(x1, y1, x2, y2, tStart, tEnd) {
-                    var segLen = tEnd - tStart;
-                    for (var i = 0; i < segsPerEdge; i++) {
-                        var frac0 = i / segsPerEdge;
-                        var frac1 = (i + 1) / segsPerEdge;
-                        var t0 = tStart + segLen * frac0;
-                        var t1 = tStart + segLen * frac1;
-                        var cx0 = x1 + (x2 - x1) * frac0;
-                        var cx1 = x1 + (x2 - x1) * frac1;
-                        var cy0 = y1 + (y2 - y1) * frac0;
-                        var cy1 = y1 + (y2 - y1) * frac1;
-
-                        // Glow pass
-                        ctx.strokeStyle = hslColor((t0 + t1) / 2, 0.2);
-                        ctx.lineWidth = glowWidth;
-                        ctx.beginPath();
-                        ctx.moveTo(cx0, cy0);
-                        ctx.lineTo(cx1, cy1);
-                        ctx.stroke();
-
-                        // Core pass
-                        ctx.strokeStyle = hslColor((t0 + t1) / 2, 1.0);
-                        ctx.lineWidth = coreWidth;
-                        ctx.beginPath();
-                        ctx.moveTo(cx0, cy0);
-                        ctx.lineTo(cx1, cy1);
-                        ctx.stroke();
-                    }
-                }
-
-                // top: left → right
-                drawEdge(0, halfCore, W, halfCore, 0, W / perim);
-                // right: top → bottom
-                drawEdge(W - halfCore, 0, W - halfCore, H, W / perim, (W + H) / perim);
-                // bottom: right → left
-                drawEdge(W, H - halfCore, 0, H - halfCore, (W + H) / perim, (2 * W + H) / perim);
-                // left: bottom → top
-                drawEdge(halfCore, H, halfCore, 0, (2 * W + H) / perim, 1.0);
+        // Left edge: pp 0.75 -> 1.0 (increasing, mirrored with yScale)
+        Rectangle {
+            id: leftEdge
+            anchors { top: parent.top; bottom: parent.bottom; left: parent.left }
+            width: 10
+            transform: Scale { yScale: -1; origin.y: leftEdge.height / 2 }
+            gradient: Gradient {
+                GradientStop { position: 0.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.75)   : root.borderColor }
+                GradientStop { position: 0.25;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.8125) : root.borderColor }
+                GradientStop { position: 0.5;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.875)  : root.borderColor }
+                GradientStop { position: 0.75;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.9375) : root.borderColor }
+                GradientStop { position: 1.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 1.0)    : root.borderColor }
             }
         }
 

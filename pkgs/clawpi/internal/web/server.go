@@ -10,18 +10,17 @@ import (
 	"os/exec"
 	"time"
 
-	"clawpi/internal/eww"
+	"clawpi/internal/quickshell"
 )
 
 //go:embed landing-page
 var landingFS embed.FS
 
-// TTSStopFunc is called when the TTS stop endpoint is hit.
-// Set by main to wire up the eww controller.
-var ewwController *eww.Controller
+// qsController is set by main to wire up the quickshell controller.
+var qsController *quickshell.Controller
 
-func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *eww.Controller) error {
-	ewwController = ctrl
+func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *quickshell.Controller) error {
+	qsController = ctrl
 
 	sub, err := fs.Sub(landingFS, "landing-page")
 	if err != nil {
@@ -44,8 +43,8 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *eww.Con
 	// Show the TTS stop button overlay
 	mux.HandleFunc("POST /api/tts/playing", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("tts: playback started")
-		if ewwController != nil {
-			ewwController.SetTTSPlaying(true)
+		if qsController != nil {
+			qsController.SetTTSPlaying(true)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"ok":true}`))
@@ -60,8 +59,8 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *eww.Con
 		} else {
 			log.Println("tts stop: killed pw-play")
 		}
-		if ewwController != nil {
-			ewwController.SetTTSPlaying(false)
+		if qsController != nil {
+			qsController.SetTTSPlaying(false)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"ok":true}`))
@@ -70,8 +69,8 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *eww.Con
 	// Hide the TTS stop button (called when playback ends naturally)
 	mux.HandleFunc("POST /api/tts/stopped", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("tts: playback ended")
-		if ewwController != nil {
-			ewwController.SetTTSPlaying(false)
+		if qsController != nil {
+			qsController.SetTTSPlaying(false)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"ok":true}`))
@@ -80,8 +79,8 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *eww.Con
 	// Show the recording indicator overlay
 	mux.HandleFunc("POST /api/recording/start", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("recording: started")
-		if ewwController != nil {
-			ewwController.SetRecording(true)
+		if qsController != nil {
+			qsController.SetRecording(true)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"ok":true}`))
@@ -90,8 +89,8 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *eww.Con
 	// Hide the recording indicator overlay
 	mux.HandleFunc("POST /api/recording/stop", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("recording: stopped")
-		if ewwController != nil {
-			ewwController.SetRecording(false)
+		if qsController != nil {
+			qsController.SetRecording(false)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"ok":true}`))
@@ -100,8 +99,8 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *eww.Con
 	// Voice pipeline state callbacks (called by voice-pipeline.py via _notify_state)
 	mux.HandleFunc("POST /api/voice/listening", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("voice: listening (recording speech)")
-		if ewwController != nil {
-			ewwController.SetRecording(true)
+		if qsController != nil {
+			qsController.SetRecording(true)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"ok":true}`))
@@ -109,9 +108,9 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *eww.Con
 
 	mux.HandleFunc("POST /api/voice/transcribing", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("voice: transcribing")
-		if ewwController != nil {
-			ewwController.SetRecording(false)
-			ewwController.SetState(eww.StateTranscribing)
+		if qsController != nil {
+			qsController.SetRecording(false)
+			qsController.SetState(quickshell.StateTranscribing)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"ok":true}`))
@@ -119,8 +118,8 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *eww.Con
 
 	mux.HandleFunc("POST /api/voice/delivering", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("voice: delivering to agent")
-		if ewwController != nil {
-			ewwController.SetState(eww.StateDelivering)
+		if qsController != nil {
+			qsController.SetState(quickshell.StateDelivering)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"ok":true}`))
@@ -128,12 +127,12 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *eww.Con
 
 	mux.HandleFunc("POST /api/voice/not_understood", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("voice: not understood (empty transcript)")
-		if ewwController != nil {
-			ewwController.SetMessage("Didn't catch that")
-			ewwController.SetState(eww.StateError)
+		if qsController != nil {
+			qsController.SetMessage("Didn't catch that")
+			qsController.SetState(quickshell.StateError)
 			go func() {
 				time.Sleep(3 * time.Second)
-				ewwController.SetState(eww.StateIdle)
+				qsController.SetState(quickshell.StateIdle)
 			}()
 		}
 		w.WriteHeader(http.StatusOK)
@@ -142,9 +141,9 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *eww.Con
 
 	mux.HandleFunc("POST /api/voice/idle", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("voice: idle")
-		if ewwController != nil {
-			ewwController.SetRecording(false)
-			ewwController.SetState(eww.StateIdle)
+		if qsController != nil {
+			qsController.SetRecording(false)
+			qsController.SetState(quickshell.StateIdle)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"ok":true}`))

@@ -1,4 +1,4 @@
-package eww
+package quickshell
 
 import (
 	"encoding/json"
@@ -92,13 +92,13 @@ func (c *Controller) writeStateFile() {
 	c.mu.Unlock()
 
 	if err != nil {
-		log.Printf("eww: marshal state: %v", err)
+		log.Printf("quickshell: marshal state: %v", err)
 		return
 	}
 	if path == "" {
 		return
 	}
 	if err := os.WriteFile(path, data, 0644); err != nil {
-		log.Printf("eww: write state file: %v", err)
+		log.Printf("quickshell: write state file: %v", err)
 	}
 }
