@@ -344,6 +344,61 @@
           ];
       };
 
+      # Raspberry Pi 4B — Matrix + debug tools
+      nixosConfigurations.rpi4-matrix-debug = nixos-raspberrypi.lib.nixosSystem {
+        inherit specialArgs;
+        modules =
+          pi4Modules
+          ++ commonModules
+          ++ [
+            {
+              services.clawpi.debug = true;
+              services.clawpi.agent.documents.hardwareAwareness.enable = true;
+              services.clawpi.canvas.tmpfs = false;
+              services.clawpi.audio.enable = true;
+              services.clawpi.audio.groq.enable = true;
+              services.clawpi.elevenlabs.enable = true;
+              # Voice pipeline disabled — too heavy for Pi 4B
+              services.clawpi.allowedModels = [
+                # Anthropic
+                {
+                  id = "anthropic/claude-sonnet-4-5";
+                  name = "Sonnet 4.5";
+                }
+                {
+                  id = "anthropic/claude-haiku-4-5";
+                  name = "Haiku 4.5";
+                }
+                # OpenRouter
+                {
+                  id = "openrouter/moonshotai/kimi-k2.5";
+                  name = "Kimi K2.5";
+                }
+                {
+                  id = "openrouter/minimax/minimax-m2.5";
+                  name = "MiniMax M2.5";
+                }
+                {
+                  id = "openrouter/google/gemini-2.5-flash-lite";
+                  name = "Gemini 2.5 Flash Lite";
+                }
+              ];
+              services.clawpi.matrix = {
+                enable = true;
+                homeserver = "https://matrix.glinq.org";
+                encryption = true;
+                dm.policy = "pairing";
+                groupPolicy = "open";
+                replyToMode = "all";
+                actions = {
+                  reactions = true;
+                  sendMessage = true;
+                };
+              };
+            }
+          ];
+      };
+
       # For building flashable SD images (./build.sh)
       nixosConfigurations.rpi5-installer = nixos-raspberrypi.lib.nixosSystem {
         inherit specialArgs;
