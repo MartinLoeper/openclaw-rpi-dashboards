@@ -46,11 +46,17 @@ func main() {
 		ctrl.SetState(quickshell.StateDisconnected)
 	}
 
+	client.OnMessage = func(text string) {
+		ctrl.SetMessage(text)
+	}
+
 	client.OnStateChange = func(state gateway.AgentState, toolName string) {
 		switch state {
 		case gateway.StateIdle:
+			ctrl.SetMessage("")
 			ctrl.SetState(quickshell.StateIdle)
 		case gateway.StateThinking:
+			ctrl.SetMessage("")
 			ctrl.SetState(quickshell.StateThinking)
 		case gateway.StateResponding:
 			ctrl.SetState(quickshell.StateResponding)

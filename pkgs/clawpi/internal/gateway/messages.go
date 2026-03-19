@@ -69,3 +69,9 @@ type LifecycleData struct {
 type ToolEventData struct {
 	Name string `json:"name"`
 }
+
+// AssistantEventData is the inner data for stream="assistant" agent events.
+type AssistantEventData struct {
+	Text  string `json:"text"`
+	Delta string `json:"delta"`
+}

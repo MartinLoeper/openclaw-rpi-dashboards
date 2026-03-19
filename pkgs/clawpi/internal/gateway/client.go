@@ -27,6 +27,7 @@ type Client struct {
 	token         string
 	Debug         bool
 	OnStateChange func(state AgentState, toolName string)
+	OnMessage     func(text string)
 	OnDisconnect  func()
 	OnConnect     func()
 }
@@ -207,6 +208,12 @@ func (c *Client) handleEvent(msg *GatewayMessage, raw []byte) {
 
 	case "assistant":
 		c.emitState(StateResponding, "")
+		var assistant AssistantEventData
+		if err := json.Unmarshal(agentEvent.Data, &assistant); err == nil && assistant.Text != "" {
+			if c.OnMessage != nil {
+				c.OnMessage(assistant.Text)
+			}
+		}
 
 	case "tool_use":
 		var tool ToolEventData

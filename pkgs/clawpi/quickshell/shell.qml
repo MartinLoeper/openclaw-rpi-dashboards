@@ -203,6 +203,40 @@ ShellRoot {
             }
         }
 
+        // Agent response text — bottom center
+        Rectangle {
+            id: messageBox
+            visible: root.message.length > 0 && root.currentState !== "idle"
+            anchors {
+                bottom: parent.bottom
+                horizontalCenter: parent.horizontalCenter
+                bottomMargin: 40
+            }
+            width: Math.min(messageText.implicitWidth + 48, parent.width * 0.85)
+            height: messageText.implicitHeight + 32
+            radius: 16
+            color: Qt.rgba(0, 0, 0, 0.75)
+
+            Text {
+                id: messageText
+                anchors {
+                    fill: parent
+                    margins: 16
+                    leftMargin: 24
+                    rightMargin: 24
+                }
+                text: root.message
+                color: "#e0e0e0"
+                font.pixelSize: 18
+                font.family: "sans-serif"
+                wrapMode: Text.WordWrap
+                maximumLineCount: 6
+                elide: Text.ElideRight
+                horizontalAlignment: Text.AlignLeft
+                verticalAlignment: Text.AlignVCenter
+            }
+        }
+
         // Recording badge — top-left red dot
         Rectangle {
             visible: root.recording
