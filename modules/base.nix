@@ -36,6 +36,8 @@
     "d /tmp/openclaw 0755 kiosk kiosk -"
   ];
 
+  services.openssh.enable = true;
+
   security.rtkit.enable = true;
 
   system.stateVersion = lib.mkDefault "25.05";
