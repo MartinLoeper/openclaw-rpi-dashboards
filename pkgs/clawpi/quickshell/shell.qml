@@ -88,7 +88,7 @@ ShellRoot {
 
         NumberAnimation {
             target: root; property: "flashOpacity"
-            from: 1.0; to: 0.0; duration: 800
+            from: 1.0; to: 0.0; duration: 2000
             easing.type: Easing.OutCubic
         }
     }
