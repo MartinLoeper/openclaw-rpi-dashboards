@@ -2,7 +2,6 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import QtQuick
-import QtQuick.Controls
 
 ShellRoot {
     id: root
@@ -22,9 +21,7 @@ ShellRoot {
             root.recording = obj.recording || false;
             root.toolName = obj.toolName || "";
             root.message = obj.message || "";
-        } catch (e) {
-            console.log("clawpi: failed to parse state JSON:", e);
-        }
+        } catch (e) {}
     }
 
     property color stateColor: {
@@ -41,15 +38,12 @@ ShellRoot {
     }
 
     property bool active: root.currentState !== "idle"
-
     property string stateFilePath: Quickshell.env("XDG_RUNTIME_DIR") + "/clawpi-state.json"
 
-    // Poll the state file via Process — FileView.watchChanges (inotify)
-    // doesn't reliably detect os.WriteFile writes from the Go daemon.
+    // Poll state file via Process — FileView inotify doesn't reliably
+    // detect writes from the Go daemon's os.WriteFile.
     Timer {
-        interval: 200
-        repeat: true
-        running: true
+        interval: 200; repeat: true; running: true
         onTriggered: stateReader.running = true
     }
 
@@ -79,32 +73,36 @@ ShellRoot {
 
         // Top border
         Rectangle {
-            visible: root.active
-            anchors { left: parent.left; right: parent.right; top: parent.top }
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
             height: win.borderWidth
             color: root.stateColor
         }
 
         // Bottom border
         Rectangle {
-            visible: root.active
-            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
             height: win.borderWidth
             color: root.stateColor
         }
 
         // Left border
         Rectangle {
-            visible: root.active
-            anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
             width: win.borderWidth
             color: root.stateColor
         }
 
         // Right border
         Rectangle {
-            visible: root.active
-            anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
             width: win.borderWidth
             color: root.stateColor
         }
