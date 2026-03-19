@@ -16,6 +16,9 @@ ShellRoot {
     property color borderColor: "#333333"
     property bool shouldPulse: false
     property real lightPhase: 0
+    property bool flashing: false
+    property real flashOpacity: 0.0
+    property string previousState: "idle"
 
     NumberAnimation {
         target: root
@@ -77,9 +80,30 @@ ShellRoot {
         }
     }
 
+    // Flash animation: bright glow that fades out when agent finishes
+    SequentialAnimation {
+        id: flashAnim
+        onStarted: { root.flashing = true; root.flashOpacity = 1.0; }
+        onStopped: { root.flashing = false; root.flashOpacity = 0.0; }
+
+        NumberAnimation {
+            target: root; property: "flashOpacity"
+            from: 1.0; to: 0.0; duration: 800
+            easing.type: Easing.OutCubic
+        }
+    }
+
     onCurrentStateChanged: {
-        root.borderColor = getColor(currentState);
+        // Trigger flash when transitioning from an active state to idle
+        if (currentState === "idle" && previousState !== "idle" && previousState !== "disconnected") {
+            // Keep the previous state's color for the flash
+            root.borderColor = getColor(previousState);
+            flashAnim.start();
+        } else {
+            root.borderColor = getColor(currentState);
+        }
         root.shouldPulse = getPulse(currentState);
+        root.previousState = currentState;
     }
 
     property string stateFilePath: Quickshell.env("XDG_RUNTIME_DIR") + "/clawpi-state.json"
@@ -113,34 +137,42 @@ ShellRoot {
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-        // Top edge: pp 0.0 -> 0.25 (increasing, left to right)
+        // Border color helper: during flash, show solid color with flashOpacity;
+        // during pulse, show animated gradient; otherwise solid borderColor
+        function edgeColor(pp) {
+            if (root.flashing) return Qt.rgba(root.borderColor.r, root.borderColor.g, root.borderColor.b, root.flashOpacity);
+            if (root.shouldPulse) return root.sc(root.lightPhase, pp);
+            return root.borderColor;
+        }
+
+        // Top edge
         Rectangle {
             anchors { top: parent.top; left: parent.left; right: parent.right }
             height: 10
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.0)    : root.borderColor }
-                GradientStop { position: 0.25;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.0625) : root.borderColor }
-                GradientStop { position: 0.5;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.125)  : root.borderColor }
-                GradientStop { position: 0.75;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.1875) : root.borderColor }
-                GradientStop { position: 1.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.25)   : root.borderColor }
+                GradientStop { position: 0.0;   color: win.edgeColor(0.0) }
+                GradientStop { position: 0.25;  color: win.edgeColor(0.0625) }
+                GradientStop { position: 0.5;   color: win.edgeColor(0.125) }
+                GradientStop { position: 0.75;  color: win.edgeColor(0.1875) }
+                GradientStop { position: 1.0;   color: win.edgeColor(0.25) }
             }
         }
 
-        // Right edge: pp 0.25 -> 0.5 (increasing, top to bottom)
+        // Right edge
         Rectangle {
             anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
             width: 10
             gradient: Gradient {
-                GradientStop { position: 0.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.25)   : root.borderColor }
-                GradientStop { position: 0.25;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.3125) : root.borderColor }
-                GradientStop { position: 0.5;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.375)  : root.borderColor }
-                GradientStop { position: 0.75;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.4375) : root.borderColor }
-                GradientStop { position: 1.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.5)    : root.borderColor }
+                GradientStop { position: 0.0;   color: win.edgeColor(0.25) }
+                GradientStop { position: 0.25;  color: win.edgeColor(0.3125) }
+                GradientStop { position: 0.5;   color: win.edgeColor(0.375) }
+                GradientStop { position: 0.75;  color: win.edgeColor(0.4375) }
+                GradientStop { position: 1.0;   color: win.edgeColor(0.5) }
             }
         }
 
-        // Bottom edge: pp 0.5 -> 0.75 (increasing, mirrored with xScale)
+        // Bottom edge
         Rectangle {
             id: bottomEdge
             anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
@@ -148,26 +180,26 @@ ShellRoot {
             transform: Scale { xScale: -1; origin.x: bottomEdge.width / 2 }
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.5)    : root.borderColor }
-                GradientStop { position: 0.25;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.5625) : root.borderColor }
-                GradientStop { position: 0.5;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.625)  : root.borderColor }
-                GradientStop { position: 0.75;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.6875) : root.borderColor }
-                GradientStop { position: 1.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.75)   : root.borderColor }
+                GradientStop { position: 0.0;   color: win.edgeColor(0.5) }
+                GradientStop { position: 0.25;  color: win.edgeColor(0.5625) }
+                GradientStop { position: 0.5;   color: win.edgeColor(0.625) }
+                GradientStop { position: 0.75;  color: win.edgeColor(0.6875) }
+                GradientStop { position: 1.0;   color: win.edgeColor(0.75) }
             }
         }
 
-        // Left edge: pp 0.75 -> 1.0 (increasing, mirrored with yScale)
+        // Left edge
         Rectangle {
             id: leftEdge
             anchors { top: parent.top; bottom: parent.bottom; left: parent.left }
             width: 10
             transform: Scale { yScale: -1; origin.y: leftEdge.height / 2 }
             gradient: Gradient {
-                GradientStop { position: 0.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.75)   : root.borderColor }
-                GradientStop { position: 0.25;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.8125) : root.borderColor }
-                GradientStop { position: 0.5;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.875)  : root.borderColor }
-                GradientStop { position: 0.75;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.9375) : root.borderColor }
-                GradientStop { position: 1.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 1.0)    : root.borderColor }
+                GradientStop { position: 0.0;   color: win.edgeColor(0.75) }
+                GradientStop { position: 0.25;  color: win.edgeColor(0.8125) }
+                GradientStop { position: 0.5;   color: win.edgeColor(0.875) }
+                GradientStop { position: 0.75;  color: win.edgeColor(0.9375) }
+                GradientStop { position: 1.0;   color: win.edgeColor(1.0) }
             }
         }
 
