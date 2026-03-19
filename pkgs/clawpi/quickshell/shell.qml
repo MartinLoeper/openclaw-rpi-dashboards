@@ -44,21 +44,20 @@ ShellRoot {
 
     property string stateFilePath: Quickshell.env("XDG_RUNTIME_DIR") + "/clawpi-state.json"
 
-    // Poll the state file — FileView.watchChanges (inotify) doesn't
-    // reliably detect os.WriteFile writes from the Go daemon.
+    // Poll the state file via Process — FileView.watchChanges (inotify)
+    // doesn't reliably detect os.WriteFile writes from the Go daemon.
     Timer {
         interval: 200
         repeat: true
         running: true
-        onTriggered: {
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", "file://" + root.stateFilePath);
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 0) {
-                    root.parseState(xhr.responseText);
-                }
-            };
-            xhr.send();
+        onTriggered: stateReader.running = true
+    }
+
+    Process {
+        id: stateReader
+        command: ["cat", root.stateFilePath]
+        stdout: SplitParser {
+            onRead: function(line) { root.parseState(line); }
         }
     }
 
