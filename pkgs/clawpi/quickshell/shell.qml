@@ -204,28 +204,21 @@ ShellRoot {
         }
 
         // Agent response text — bottom center
-        // Stays visible for 10s after the agent goes idle
+        // Persists until next non-idle state or user dismisses via close button
         property string displayMessage: ""
         property bool messageVisible: false
 
-        Timer {
-            id: messageHideTimer
-            interval: 10000
-            onTriggered: {
-                win.messageVisible = false;
-                win.displayMessage = "";
-            }
+        function dismissMessage() {
+            win.messageVisible = false;
+            win.displayMessage = "";
         }
 
         Connections {
             target: root
             function onCurrentStateChanged() {
-                if (root.currentState === "idle" && win.displayMessage.length > 0) {
-                    // Agent finished — keep message visible for 10s
-                    messageHideTimer.restart();
-                } else if (root.currentState !== "idle") {
-                    // Agent active — show message, cancel hide timer
-                    messageHideTimer.stop();
+                if (root.currentState !== "idle") {
+                    // New activity — clear old message, show new one as it streams
+                    win.displayMessage = "";
                     win.messageVisible = true;
                 }
             }
@@ -273,11 +266,37 @@ ShellRoot {
             border.color: Qt.rgba(1.0, 0.85, 0.0, 0.6)
             border.width: 1
 
+            // Close button — top right
+            Rectangle {
+                z: 2
+                width: 28
+                height: 28
+                radius: 14
+                color: Qt.rgba(1, 1, 1, 0.15)
+                anchors {
+                    top: parent.top
+                    right: parent.right
+                    topMargin: 8
+                    rightMargin: 8
+                }
+                Text {
+                    anchors.centerIn: parent
+                    text: "\u2715"
+                    color: "#aaaaaa"
+                    font.pixelSize: 16
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: win.dismissMessage()
+                }
+            }
+
             Flickable {
                 id: messageFlick
                 anchors {
                     fill: parent
                     margins: 24
+                    rightMargin: 44
                 }
                 contentHeight: messageText.implicitHeight
                 clip: true
