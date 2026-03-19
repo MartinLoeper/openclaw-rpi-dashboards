@@ -327,7 +327,13 @@ in
         description = "Require @bot mention in group chats before the agent responds.";
       };
 
-      streaming = lib.mkOption {
+      groupPolicy = lib.mkOption {
+        type = lib.types.nullOr (lib.types.enum [ "allowlist" "open" "disabled" ]);
+        default = null;
+        description = "Group message policy. null uses the gateway default (allowlist).";
+      };
+
+      streaming = lib.mkOption;
         type = lib.types.nullOr (lib.types.oneOf [
           lib.types.bool
           (lib.types.enum [ "off" "partial" "block" "progress" ])

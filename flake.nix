@@ -344,7 +344,7 @@
           ];
       };
 
-      # Raspberry Pi 4B — Matrix + debug tools
+      # Raspberry Pi 4B — Matrix + Telegram + debug tools
       nixosConfigurations.rpi4-matrix-debug = nixos-raspberrypi.lib.nixosSystem {
         inherit specialArgs;
         modules =
@@ -393,6 +393,22 @@
                 actions = {
                   reactions = true;
                   sendMessage = true;
+                };
+              };
+              services.clawpi.telegram = {
+                enable = true;
+                streaming = "block";
+                blockStreaming = true;
+                groupPolicy = "open";
+                requireMentionInGroups = true;
+                replyToMode = "all";
+                ackReaction = "👀";
+                reactionLevel = "extensive";
+                reactionNotifications = "all";
+                actions = {
+                  reactions = true;
+                  sendMessage = true;
+                  sticker = true;
                 };
               };
             }

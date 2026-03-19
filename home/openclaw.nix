@@ -203,6 +203,7 @@ let
   telegramChannel = lib.mkIf tgCfg.enable {
     tokenFile = tgCfg.tokenFile;
     allowFrom = lib.mkIf (tgCfg.allowFrom != [ ]) tgCfg.allowFrom;
+    groupPolicy = lib.mkIf (tgCfg.groupPolicy != null) tgCfg.groupPolicy;
     groups."*".requireMention = tgCfg.requireMentionInGroups;
     replyToMode = lib.mkIf (tgCfg.replyToMode != null) tgCfg.replyToMode;
     reactionLevel = lib.mkIf (tgCfg.reactionLevel != null) tgCfg.reactionLevel;
