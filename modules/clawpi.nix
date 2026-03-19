@@ -228,6 +228,12 @@ in
         };
       };
 
+      requireMention = lib.mkOption {
+        type = lib.types.nullOr lib.types.bool;
+        default = null;
+        description = "Require @bot mention for the bot to respond. null uses the gateway default.";
+      };
+
       groupPolicy = lib.mkOption {
         type = lib.types.nullOr (lib.types.enum [ "allowlist" "open" "disabled" ]);
         default = null;

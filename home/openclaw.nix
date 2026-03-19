@@ -170,6 +170,7 @@ let
     // { dm = { policy = mxCfg.dm.policy; }
          // lib.optionalAttrs (mxCfg.dm.allowFrom != [ ]) { allowFrom = mxCfg.dm.allowFrom; };
        }
+    // lib.optionalAttrs (mxCfg.requireMention != null) { requireMention = mxCfg.requireMention; }
     // lib.optionalAttrs (mxCfg.groupPolicy != null) { groupPolicy = mxCfg.groupPolicy; }
     // lib.optionalAttrs (mxCfg.groupAllowFrom != [ ]) { groupAllowFrom = mxCfg.groupAllowFrom; }
     // lib.optionalAttrs (mxCfg.groups != { }) { groups = mxCfg.groups; }

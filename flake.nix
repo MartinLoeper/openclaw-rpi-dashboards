@@ -333,6 +333,7 @@
                 homeserver = "https://matrix.glinq.org";
                 encryption = true;
                 dm.policy = "pairing";
+                requireMention = true;
                 groupPolicy = "open";
                 replyToMode = "all";
                 actions = {
@@ -388,6 +389,7 @@
                 homeserver = "https://matrix.glinq.org";
                 encryption = true;
                 dm.policy = "pairing";
+                requireMention = true;
                 groupPolicy = "open";
                 replyToMode = "all";
                 actions = {
