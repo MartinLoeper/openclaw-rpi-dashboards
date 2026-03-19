@@ -204,36 +204,80 @@ ShellRoot {
         }
 
         // Agent response text — bottom center
+        // Stays visible for 10s after the agent goes idle
+        property string displayMessage: ""
+        property bool messageVisible: false
+
+        Timer {
+            id: messageHideTimer
+            interval: 10000
+            onTriggered: {
+                win.messageVisible = false;
+                win.displayMessage = "";
+            }
+        }
+
+        Connections {
+            target: root
+            function onCurrentStateChanged() {
+                if (root.currentState === "idle" && win.displayMessage.length > 0) {
+                    // Agent finished — keep message visible for 10s
+                    messageHideTimer.restart();
+                } else if (root.currentState !== "idle") {
+                    // Agent active — show message, cancel hide timer
+                    messageHideTimer.stop();
+                    win.messageVisible = true;
+                }
+            }
+            function onMessageChanged() {
+                if (root.message.length > 0) {
+                    win.displayMessage = root.message;
+                    win.messageVisible = true;
+                }
+            }
+        }
+
         Rectangle {
             id: messageBox
-            visible: root.message.length > 0 && root.currentState !== "idle"
+            visible: win.messageVisible && win.displayMessage.length > 0
             anchors {
                 bottom: parent.bottom
-                horizontalCenter: parent.horizontalCenter
-                bottomMargin: 40
+                left: parent.left
+                right: parent.right
+                bottomMargin: 20
+                leftMargin: 20
+                rightMargin: 20
             }
-            width: Math.min(messageText.implicitWidth + 48, parent.width * 0.85)
-            height: messageText.implicitHeight + 32
+            height: Math.min(messageText.implicitHeight + 48, parent.height * 0.45)
             radius: 16
-            color: Qt.rgba(0, 0, 0, 0.75)
+            color: Qt.rgba(0, 0, 0, 0.8)
 
-            Text {
-                id: messageText
+            Flickable {
+                id: messageFlick
                 anchors {
                     fill: parent
-                    margins: 16
-                    leftMargin: 24
-                    rightMargin: 24
+                    margins: 24
                 }
-                text: root.message
-                color: "#e0e0e0"
-                font.pixelSize: 18
-                font.family: "sans-serif"
-                wrapMode: Text.WordWrap
-                maximumLineCount: 6
-                elide: Text.ElideRight
-                horizontalAlignment: Text.AlignLeft
-                verticalAlignment: Text.AlignVCenter
+                contentHeight: messageText.implicitHeight
+                clip: true
+
+                // Auto-scroll to bottom as text streams in
+                onContentHeightChanged: {
+                    if (contentHeight > height) {
+                        contentY = contentHeight - height;
+                    }
+                }
+
+                Text {
+                    id: messageText
+                    width: messageFlick.width
+                    text: win.displayMessage
+                    color: "#e0e0e0"
+                    font.pixelSize: 20
+                    font.family: "sans-serif"
+                    wrapMode: Text.WordWrap
+                    lineHeight: 1.4
+                }
             }
         }
 
