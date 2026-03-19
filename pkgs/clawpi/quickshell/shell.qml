@@ -230,25 +230,6 @@ ShellRoot {
             }
         }
 
-        // Outer glow (larger, blurred-looking yellow border)
-        Rectangle {
-            id: messageGlow
-            visible: win.messageVisible && win.displayMessage.length > 0
-            anchors {
-                bottom: parent.bottom
-                left: parent.left
-                right: parent.right
-                bottomMargin: 16
-                leftMargin: 16
-                rightMargin: 16
-            }
-            height: Math.min(messageText.implicitHeight + 56, parent.height * 0.45) + 6
-            radius: 19
-            color: "transparent"
-            border.color: Qt.rgba(1.0, 0.85, 0.0, 0.35)
-            border.width: 3
-        }
-
         Rectangle {
             id: messageBox
             visible: win.messageVisible && win.displayMessage.length > 0
@@ -256,15 +237,15 @@ ShellRoot {
                 bottom: parent.bottom
                 left: parent.left
                 right: parent.right
-                bottomMargin: 19
-                leftMargin: 19
-                rightMargin: 19
+                bottomMargin: 20
+                leftMargin: 20
+                rightMargin: 20
             }
             height: Math.min(messageText.implicitHeight + 48, parent.height * 0.45)
             radius: 16
             color: Qt.rgba(0, 0, 0, 0.85)
-            border.color: Qt.rgba(1.0, 0.85, 0.0, 0.6)
-            border.width: 1
+            border.color: Qt.rgba(1.0, 0.85, 0.0, 0.5)
+            border.width: 2
 
             // Close button — top right
             Rectangle {
