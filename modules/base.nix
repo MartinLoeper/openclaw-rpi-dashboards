@@ -1,22 +1,4 @@
-{ pkgs, ... }: {
-  fileSystems = {
-    "/" = {
-      device = "/dev/disk/by-label/NIXOS_SD";
-      fsType = "ext4";
-      options = [ "noatime" ];
-    };
-    "/boot/firmware" = {
-      device = "/dev/disk/by-label/FIRMWARE";
-      fsType = "vfat";
-      options = [ "noatime" "noauto" "x-systemd.automount" "x-systemd.idle-timeout=1min" ];
-    };
-  };
-
-  users.users.nixos = {
-    isNormalUser = true;
-    extraGroups = [ "wheel" ];
-  };
-
+{ pkgs, lib, ... }: {
   users.users.kiosk = {
     isSystemUser = true;
     group = "kiosk";
@@ -30,7 +12,7 @@
 
   environment.systemPackages = with pkgs; [ openclaw-gateway sshpass vim jq ];
 
-  hardware.graphics.enable = true;
+  hardware.graphics.enable = lib.mkDefault true;
 
   services.pipewire = {
     enable = true;
@@ -39,21 +21,13 @@
   };
 
   services.avahi = {
-    enable = true;
-    nssmdns4 = true;
+    enable = lib.mkDefault true;
+    nssmdns4 = lib.mkDefault true;
     publish = {
-      enable = true;
-      addresses = true;
+      enable = lib.mkDefault true;
+      addresses = lib.mkDefault true;
     };
   };
-
-  services.openssh = {
-    enable = true;
-    settings.PermitRootLogin = "yes";
-  };
-
-  nix.settings.trusted-users = [ "nixos" ];
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   # Create /tmp/openclaw for gateway log files (owned by kiosk user).
   # The openclaw-gateway service uses StandardOutput=append:/tmp/openclaw/...
@@ -62,15 +36,7 @@
     "d /tmp/openclaw 0755 kiosk kiosk -"
   ];
 
-  # 1 GB swap file — critical for the 1 GB Pi 4B, helpful everywhere
-  swapDevices = [{
-    device = "/var/swapfile";
-    size = 1024; # MiB
-  }];
-
   security.rtkit.enable = true;
 
-  security.sudo.wheelNeedsPassword = false;
-
-  system.stateVersion = "25.05";
+  system.stateVersion = lib.mkDefault "25.05";
 }

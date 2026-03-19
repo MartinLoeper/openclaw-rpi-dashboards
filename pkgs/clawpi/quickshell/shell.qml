@@ -61,6 +61,7 @@ ShellRoot {
         watchChanges: true
         preload: true
         onFileChanged: root.parseState(stateFile.text())
+        onTextChanged: root.parseState(stateFile.text())
     }
 
     PanelWindow {

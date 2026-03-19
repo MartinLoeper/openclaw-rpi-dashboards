@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(gh api:*)",
+      "Bash(curl:*)",
+      "WebSearch",
+      "WebFetch(domain:nixos.wiki)",
+      "WebFetch(domain:www.tweag.io)",
+      "WebFetch(domain:farcaller.net)",
+      "WebFetch(domain:elis.nu)",
+      "WebFetch(domain:search.nixos.org)",
+      "WebFetch(domain:wiki.nixos.org)",
+      "WebFetch(domain:docs.openclaw.ai)",
+      "Bash(nix flake:*)",
+      "Bash(xargs:*)",
+      "Bash(grep:*)",
+      "Bash(nix search:*)",
+      "Bash(nix-prefetch-url:*)",
+      "Bash(ssh:*)",
+      "Bash(matrix-commander-rs:*)",
+      "Bash(touch:*)",
+      "Bash(cd:*)"
+    ]
+  }
+}

@@ -1,11 +1,17 @@
 final: prev:
 let
-  # Pre-built native crypto library for Matrix E2EE (aarch64-linux, glibc).
+  # Pre-built native crypto library for Matrix E2EE.
   # The npm package tries to download this at runtime, which fails in the Nix store.
-  matrixCryptoNative = prev.fetchurl {
-    url = "https://github.com/matrix-org/matrix-rust-sdk-crypto-nodejs/releases/download/v0.4.0/matrix-sdk-crypto.linux-arm64-gnu.node";
-    hash = "sha256-DcHFgxVYDNDO85wuHsKOHjiFajN28ll9oa4gOI8k0PQ=";
-  };
+  matrixCryptoNative = {
+    "aarch64-linux" = prev.fetchurl {
+      url = "https://github.com/matrix-org/matrix-rust-sdk-crypto-nodejs/releases/download/v0.4.0/matrix-sdk-crypto.linux-arm64-gnu.node";
+      hash = "sha256-DcHFgxVYDNDO85wuHsKOHjiFajN28ll9oa4gOI8k0PQ=";
+    };
+    "x86_64-linux" = prev.fetchurl {
+      url = "https://github.com/matrix-org/matrix-rust-sdk-crypto-nodejs/releases/download/v0.4.0/matrix-sdk-crypto.linux-x64-gnu.node";
+      hash = "sha256-cHjU3ZhxKPea/RksT2IfZK3s435D8qh1bx0KnwNN5xg=";
+    };
+  }.${prev.stdenv.hostPlatform.system} or null;
 
   fixDeps = drv: drv.overrideAttrs (old: {
     postPhases = (old.postPhases or []) ++ [ "fixMissingDeps" ];
@@ -24,12 +30,14 @@ let
 
       # Install pre-built native crypto library for Matrix.
       # The npm package tries to download it at runtime, which fails in the Nix store.
+      ${prev.lib.optionalString (matrixCryptoNative != null) ''
       crypto_pkg="$(find "$out/lib/openclaw/node_modules/.pnpm" \
         -path "*/@matrix-org+matrix-sdk-crypto-nodejs@*/node_modules/@matrix-org/matrix-sdk-crypto-nodejs" \
         -print | head -n 1)"
       if [ -n "$crypto_pkg" ]; then
-        cp "${matrixCryptoNative}" "$crypto_pkg/matrix-sdk-crypto.linux-arm64-gnu.node"
+        cp "${matrixCryptoNative}" "$crypto_pkg/${matrixCryptoNative.name}"
       fi
+      ''}
 
       # Work around missing dependencies for the Matrix extension.
       # The packages are in the pnpm store but the extension's createRequire() can't resolve them.

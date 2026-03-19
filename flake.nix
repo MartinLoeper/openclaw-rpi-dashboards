@@ -24,8 +24,12 @@
       ...
     }:
     let
-      # Hardware-independent application modules shared by all configs
-      commonModules = [
+      nixpkgs = nixos-raspberrypi.inputs.nixpkgs;
+
+      # ── Software modules ─────────────────────────────────────────────
+      # Hardware-independent application layer shared by Pi and VM configs.
+      # Does NOT include filesystems, bootloader, or board-specific hardware.
+      softwareModules = [
         {
           nixpkgs.overlays = [
             nix-openclaw.overlays.default
@@ -54,6 +58,38 @@
         ./modules/clawpi.nix
         ./modules/voice.nix
       ];
+
+      # ── Raspberry Pi hardware ────────────────────────────────────────
+      # Pi-specific base: SD card filesystems, swap, nixos user
+      piBaseModules = [
+        {
+          fileSystems = {
+            "/" = {
+              device = "/dev/disk/by-label/NIXOS_SD";
+              fsType = "ext4";
+              options = [ "noatime" ];
+            };
+            "/boot/firmware" = {
+              device = "/dev/disk/by-label/FIRMWARE";
+              fsType = "vfat";
+              options = [ "noatime" "noauto" "x-systemd.automount" "x-systemd.idle-timeout=1min" ];
+            };
+          };
+          users.users.nixos = {
+            isNormalUser = true;
+            extraGroups = [ "wheel" ];
+          };
+          nix.settings.trusted-users = [ "nixos" ];
+          nix.settings.experimental-features = [ "nix-command" "flakes" ];
+          security.sudo.wheelNeedsPassword = false;
+          services.openssh.settings.PermitRootLogin = "yes";
+          # 1 GB swap — critical for the 1 GB Pi 4B, helpful everywhere
+          swapDevices = [{ device = "/var/swapfile"; size = 1024; }];
+        }
+      ];
+
+      # Full Pi module set: software + Pi base hardware
+      commonModules = softwareModules ++ piBaseModules;
 
       # Raspberry Pi 5 hardware modules
       pi5Modules = [
@@ -85,14 +121,29 @@
       # Installer-specific modules (shared between Pi 4 and Pi 5 installer configs)
       installerModules = [
         nixos-raspberrypi.nixosModules.sd-image
-        "${nixos-raspberrypi.inputs.nixpkgs}/nixos/modules/profiles/installation-device.nix"
+        "${nixpkgs}/nixos/modules/profiles/installation-device.nix"
         {
-          boot.swraid.enable = nixos-raspberrypi.inputs.nixpkgs.lib.mkForce false;
+          boot.swraid.enable = nixpkgs.lib.mkForce false;
           installer.cloneConfig = false;
         }
       ];
     in
     {
+      # ── Reusable NixOS module ──────────────────────────────────────
+      # Import this into any NixOS system to get the ClawPi software stack
+      # (openclaw-gateway, clawpi daemon, quickshell, clawpi-tools).
+      # The consuming system provides its own hardware config, bootloader,
+      # filesystems, and graphical session.
+      #
+      # Usage in a consuming flake:
+      #   inputs.clawpi.url = "path:/host/clawpi2";
+      #   modules = [ clawpi.nixosModules.default { services.clawpi.debug = true; } ];
+      nixosModules.default = {
+        imports = softwareModules;
+      };
+
+      # ── Raspberry Pi configurations ────────────────────────────────
+
       # For ongoing deploys via nixos-rebuild (./deploy.sh)
       nixosConfigurations.rpi5 = nixos-raspberrypi.lib.nixosSystem {
         inherit specialArgs;
@@ -417,6 +468,8 @@
           ];
       };
 
+      # ── Installer images ───────────────────────────────────────────
+
       # For building flashable SD images (./build.sh)
       nixosConfigurations.rpi5-installer = nixos-raspberrypi.lib.nixosSystem {
         inherit specialArgs;
@@ -433,9 +486,11 @@
 
       installerImages.rpi4 = self.nixosConfigurations.rpi4-installer.config.system.build.sdImage;
 
+      # ── Dev shells ─────────────────────────────────────────────────
+
       devShells.x86_64-linux.default =
         let
-          pkgs = import nixos-raspberrypi.inputs.nixpkgs { system = "x86_64-linux"; };
+          pkgs = import nixpkgs { system = "x86_64-linux"; };
           python = pkgs.python3.withPackages (p: [ p.websockets ]);
           screenshot = pkgs.writeShellScriptBin "clawpi-screenshot" ''
             ${python}/bin/python3 ${./scripts/screenshot.py} "$@"
@@ -452,7 +507,7 @@
       # Usage: nix develop .#training
       devShells.x86_64-linux.training =
         let
-          pkgs = import nixos-raspberrypi.inputs.nixpkgs {
+          pkgs = import nixpkgs {
             system = "x86_64-linux";
             config.allowUnfree = true;
             config.rocmSupport = true;
