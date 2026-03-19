@@ -86,8 +86,12 @@ ShellRoot {
         id: stateFile
         path: Quickshell.env("XDG_RUNTIME_DIR") + "/clawpi-state.json"
         watchChanges: true
-        preload: true
-        onFileChanged: root.parseState(stateFile.text())
+        blockLoading: true
+
+        onFileChanged: {
+            stateFile.reload();
+            root.parseState(stateFile.text());
+        }
     }
 
     PanelWindow {
