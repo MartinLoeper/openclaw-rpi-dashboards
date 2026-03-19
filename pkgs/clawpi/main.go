@@ -53,7 +53,6 @@ func main() {
 	client.OnStateChange = func(state gateway.AgentState, toolName string) {
 		switch state {
 		case gateway.StateIdle:
-			ctrl.SetMessage("")
 			ctrl.SetState(quickshell.StateIdle)
 		case gateway.StateThinking:
 			ctrl.SetMessage("")
