@@ -137,10 +137,11 @@ ShellRoot {
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-        // Empty input mask — all pointer input passes through to windows below.
-        // The message box close button won't be clickable, but the overlay
-        // won't block interaction with the browser underneath.
-        mask: Region {}
+        // Input mask: pass through everything except the message box area.
+        // When the message box is hidden, the mask is empty (full passthrough).
+        mask: Region {
+            item: messageBox.visible ? messageBox : null
+        }
 
         // Border color helper: during flash, show solid color with flashOpacity;
         // during pulse, show animated gradient; otherwise solid borderColor
