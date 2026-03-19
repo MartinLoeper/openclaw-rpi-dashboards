@@ -31,10 +31,13 @@ type Controller struct {
 }
 
 func NewController(stateFile string) *Controller {
-	return &Controller{
+	c := &Controller{
 		stateFile: stateFile,
 		state:     StateIdle,
 	}
+	// Write idle state on startup to clear any stale state from a previous run
+	c.writeStateFile()
+	return c
 }
 
 func (c *Controller) SetState(state State) {
