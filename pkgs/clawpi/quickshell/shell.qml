@@ -84,7 +84,7 @@ ShellRoot {
     SequentialAnimation {
         id: flashAnim
         onStarted: { root.flashing = true; root.flashOpacity = 1.0; }
-        onStopped: { root.flashing = false; root.flashOpacity = 0.0; }
+        onStopped: { root.flashing = false; root.flashOpacity = 0.0; root.borderColor = getColor("idle"); }
 
         NumberAnimation {
             target: root; property: "flashOpacity"
