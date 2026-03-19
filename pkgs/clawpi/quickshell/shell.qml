@@ -117,7 +117,7 @@ ShellRoot {
 
     Process {
         id: stateReader
-        command: ["cat", root.stateFilePath]
+        command: ["/run/current-system/sw/bin/cat", root.stateFilePath]
         stdout: SplitParser {
             onRead: function(line) { root.parseState(line); }
         }
