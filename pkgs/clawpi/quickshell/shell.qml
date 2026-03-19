@@ -2,6 +2,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import QtQuick
+import QtQuick.Controls
 
 ShellRoot {
     id: root
@@ -12,6 +13,29 @@ ShellRoot {
     property string toolName: ""
     property string message: ""
 
+    property color borderColor: "#333333"
+    property bool shouldPulse: false
+    property real lightPhase: 0
+
+    NumberAnimation {
+        target: root
+        property: "lightPhase"
+        from: 0; to: 1
+        duration: 2000
+        loops: Animation.Infinite
+        running: root.shouldPulse
+    }
+
+    function sc(lp, pp) {
+        var bc = borderColor;
+        var d = lp - pp;
+        if (d > 0.5) d -= 1.0;
+        if (d < -0.5) d += 1.0;
+        var raw = (Math.cos(d * 2 * Math.PI) + 1) / 2;
+        var t = 0.05 + 0.95 * Math.pow(raw, 3);
+        return Qt.rgba(bc.r * t, bc.g * t, bc.b * t, 1.0);
+    }
+
     function parseState(str) {
         if (!str || str.length === 0) return;
         try {
@@ -21,27 +45,47 @@ ShellRoot {
             root.recording = obj.recording || false;
             root.toolName = obj.toolName || "";
             root.message = obj.message || "";
-        } catch (e) {}
-    }
-
-    property color stateColor: {
-        switch (root.currentState) {
-            case "thinking":     return "#3b82f6"; // blue
-            case "responding":   return "#22c55e"; // green
-            case "transcribing": return "#ef4444"; // red
-            case "delivering":   return "#06b6d4"; // cyan
-            case "tool_use":     return "#f97316"; // orange
-            case "error":        return "#dc2626"; // red
-            case "disconnected": return "#6b7280"; // gray
-            default:             return "transparent";
+        } catch (e) {
+            console.log("clawpi: failed to parse state JSON:", e);
         }
     }
 
-    property bool active: root.currentState !== "idle"
+    function getColor(state) {
+        switch(state) {
+            case "thinking":     return "#2196F3";
+            case "responding":   return "#00BCD4";
+            case "tool_use":     return "#9C27B0";
+            case "transcribing": return "#FF5722";
+            case "delivering":   return "#00897B";
+            case "error":        return "#F44336";
+            case "disconnected": return "#F44336";
+            default:             return "#333333";
+        }
+    }
+
+    function getPulse(state) {
+        switch(state) {
+            case "thinking":
+            case "responding":
+            case "tool_use":
+            case "transcribing":
+            case "delivering":
+            case "error":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    onCurrentStateChanged: {
+        root.borderColor = getColor(currentState);
+        root.shouldPulse = getPulse(currentState);
+    }
+
     property string stateFilePath: Quickshell.env("XDG_RUNTIME_DIR") + "/clawpi-state.json"
 
     // Poll state file via Process — FileView inotify doesn't reliably
-    // detect writes from the Go daemon's os.WriteFile.
+    // detect writes from the Go daemon's os.WriteFile on all compositors.
     Timer {
         interval: 200; repeat: true; running: true
         onTriggered: stateReader.running = true
@@ -69,42 +113,62 @@ ShellRoot {
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-        property int borderWidth: 6
-
-        // Top border
+        // Top edge: pp 0.0 -> 0.25 (increasing, left to right)
         Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            height: win.borderWidth
-            color: root.stateColor
+            anchors { top: parent.top; left: parent.left; right: parent.right }
+            height: 10
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.0)    : root.borderColor }
+                GradientStop { position: 0.25;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.0625) : root.borderColor }
+                GradientStop { position: 0.5;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.125)  : root.borderColor }
+                GradientStop { position: 0.75;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.1875) : root.borderColor }
+                GradientStop { position: 1.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.25)   : root.borderColor }
+            }
         }
 
-        // Bottom border
+        // Right edge: pp 0.25 -> 0.5 (increasing, top to bottom)
         Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            height: win.borderWidth
-            color: root.stateColor
+            anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
+            width: 10
+            gradient: Gradient {
+                GradientStop { position: 0.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.25)   : root.borderColor }
+                GradientStop { position: 0.25;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.3125) : root.borderColor }
+                GradientStop { position: 0.5;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.375)  : root.borderColor }
+                GradientStop { position: 0.75;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.4375) : root.borderColor }
+                GradientStop { position: 1.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.5)    : root.borderColor }
+            }
         }
 
-        // Left border
+        // Bottom edge: pp 0.5 -> 0.75 (increasing, mirrored with xScale)
         Rectangle {
-            anchors.left: parent.left
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            width: win.borderWidth
-            color: root.stateColor
+            id: bottomEdge
+            anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
+            height: 10
+            transform: Scale { xScale: -1; origin.x: bottomEdge.width / 2 }
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.5)    : root.borderColor }
+                GradientStop { position: 0.25;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.5625) : root.borderColor }
+                GradientStop { position: 0.5;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.625)  : root.borderColor }
+                GradientStop { position: 0.75;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.6875) : root.borderColor }
+                GradientStop { position: 1.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.75)   : root.borderColor }
+            }
         }
 
-        // Right border
+        // Left edge: pp 0.75 -> 1.0 (increasing, mirrored with yScale)
         Rectangle {
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            width: win.borderWidth
-            color: root.stateColor
+            id: leftEdge
+            anchors { top: parent.top; bottom: parent.bottom; left: parent.left }
+            width: 10
+            transform: Scale { yScale: -1; origin.y: leftEdge.height / 2 }
+            gradient: Gradient {
+                GradientStop { position: 0.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.75)   : root.borderColor }
+                GradientStop { position: 0.25;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.8125) : root.borderColor }
+                GradientStop { position: 0.5;   color: root.shouldPulse ? root.sc(root.lightPhase, 0.875)  : root.borderColor }
+                GradientStop { position: 0.75;  color: root.shouldPulse ? root.sc(root.lightPhase, 0.9375) : root.borderColor }
+                GradientStop { position: 1.0;   color: root.shouldPulse ? root.sc(root.lightPhase, 1.0)    : root.borderColor }
+            }
         }
 
         // Recording badge — top-left red dot

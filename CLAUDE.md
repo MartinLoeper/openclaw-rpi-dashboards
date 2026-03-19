@@ -78,6 +78,24 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
 - Build locally with `CGO_ENABLED=0 go build ./...` (no C compiler available on the dev machine)
 - Production builds are handled by Nix (`buildGoModule`) which provides the full toolchain
 
+## VM Development
+
+The flake exports `nixosModules.default` for running the ClawPi software stack in a NixOS dev VM (x86_64) without Pi hardware. The VM config lives at `/nixos-config/`.
+
+- **Rebuild:** `git commit` in clawpi2, then in `/nixos-config/`: `nix flake update clawpi && sudo nixos-rebuild switch --flake .#nixos-dev`
+- **CRITICAL: `git+file:` caching** — The VM flake uses `git+file:/host/clawpi2`. Nix locks to a specific git commit. After changing clawpi2 code, you must `git commit` then `nix flake update clawpi` — just `git add` is not enough.
+- **Services (dev user):** `clawpi-daemon.service`, `clawpi-quickshell.service` — restart both with `systemctl --user restart clawpi-daemon.service`
+- **Services (kiosk user):** `openclaw-gateway.service` — restart with `sudo -u kiosk XDG_RUNTIME_DIR=/run/user/991 systemctl --user restart openclaw-gateway.service`
+- **Chromium:** Launch with `clawpi-chromium` (windowed) or `clawpi-chromium-kiosk` (fullscreen)
+- **Port forwarding to host:** `./scripts/forward-vm.sh` (SSH tunnel for ports 18789, 3100, 9222)
+
+### Quickshell debugging
+
+- **Ghost processes are the #1 pitfall.** Running `quickshell -p /tmp/...` manually during testing leaves invisible overlay instances that stack on top of the service. Always `pkill -f quickshell` and verify with `pgrep -a quickshell` before testing. This was the main debugging red herring — tests appeared broken because stale overlays blocked the new one.
+- **Canvas doesn't render on virtio-gpu.** Use Rectangle elements instead. Original animated Canvas version saved as `shell.qml.bak`.
+- **FileView inotify doesn't detect Go's `os.WriteFile`.** The QML uses `Process { command: ["cat", path] }` with a Timer polling every 200ms instead.
+- **FileView.preload is async.** `onFileChanged` doesn't fire on initial load — use `onTextChanged` to catch the first read.
+
 ## NixOS Specifics
 
 - Bootloader: `"kernel"` for Pi 5 (generational rollback), `"uboot"` for Pi 4
