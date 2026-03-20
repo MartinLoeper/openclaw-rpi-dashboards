@@ -169,6 +169,7 @@
               services.clawpi.audio.enable = true;
               services.clawpi.audio.groq.enable = true;
               services.clawpi.elevenlabs.enable = true;
+              services.clawpi.cartesia.enable = true;
               services.clawpi.voice.enable = true;
               services.clawpi.voice.threshold = 0.25;
               services.clawpi.allowedModels = [
@@ -232,6 +233,7 @@
               services.clawpi.audio.enable = true;
               services.clawpi.audio.groq.enable = true;
               services.clawpi.elevenlabs.enable = true;
+              services.clawpi.cartesia.enable = true;
               # Voice pipeline disabled — too heavy for Pi 4B (continuous ONNX hotword detection)
               # services.clawpi.voice.enable = true;
               # services.clawpi.voice.threshold = 0.25;
@@ -293,6 +295,7 @@
               services.clawpi.audio.enable = true;
               services.clawpi.audio.groq.enable = true;
               services.clawpi.elevenlabs.enable = true;
+              services.clawpi.cartesia.enable = true;
               services.clawpi.voice.enable = true;
               services.clawpi.voice.threshold = 0.25;
               services.clawpi.allowedModels = [
@@ -355,6 +358,7 @@
               services.clawpi.audio.enable = true;
               services.clawpi.audio.groq.enable = true;
               services.clawpi.elevenlabs.enable = true;
+              services.clawpi.cartesia.enable = true;
               services.clawpi.voice.enable = true;
               services.clawpi.voice.threshold = 0.25;
               services.clawpi.allowedModels = [
@@ -412,6 +416,7 @@
               services.clawpi.audio.enable = true;
               services.clawpi.audio.groq.enable = true;
               services.clawpi.elevenlabs.enable = true;
+              services.clawpi.cartesia.enable = true;
               # Voice pipeline disabled — too heavy for Pi 4B
               services.clawpi.allowedModels = [
                 # Anthropic

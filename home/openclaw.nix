@@ -7,6 +7,7 @@ let
   canvasCfg = osConfig.services.clawpi.canvas;
   canvasDir = if canvasCfg.tmpfs then "/tmp/clawpi-canvas" else "/var/lib/kiosk/.openclaw/canvas";
   canvasArchiveDir = "/var/lib/kiosk/.openclaw/canvas-archive";
+  cartesiaCfg = osConfig.services.clawpi.cartesia;
   elevenlabsCfg = osConfig.services.clawpi.elevenlabs;
   powerCfg = osConfig.services.clawpi.powerControl;
   mxCfg = osConfig.services.clawpi.matrix;
@@ -307,6 +308,11 @@ in
       Environment =
         [ "CLAWPI_CANVAS_DIR=${canvasDir}" "CLAWPI_CANVAS_ARCHIVE_DIR=${canvasArchiveDir}" ]
         ++ lib.optional debugCfg "OPENCLAW_LOG_LEVEL=debug"
+        ++ lib.optionals cartesiaCfg.enable [
+          "CLAWPI_CARTESIA_API_KEY_FILE=${toString cartesiaCfg.apiKeyFile}"
+          "CLAWPI_CARTESIA_VOICE=${cartesiaCfg.voice}"
+          "CLAWPI_CARTESIA_MODEL=${cartesiaCfg.model}"
+        ]
         ++ lib.optionals elevenlabsCfg.enable [
           "CLAWPI_ELEVENLABS_API_KEY_FILE=${toString elevenlabsCfg.apiKeyFile}"
           "CLAWPI_ELEVENLABS_VOICE=${elevenlabsCfg.voice}"

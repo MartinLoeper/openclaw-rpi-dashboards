@@ -421,6 +421,235 @@ export default function (api: any) {
     },
   });
 
+  // ── TTS: Cartesia ──────────────────────────────────────────────
+  const CARTESIA_KEY_FILE = process.env.CLAWPI_CARTESIA_API_KEY_FILE;
+  const CARTESIA_DEFAULT_VOICE = process.env.CLAWPI_CARTESIA_VOICE ?? "a0e99841-438c-4a64-b679-ae501e7d6091";
+  const CARTESIA_DEFAULT_MODEL = process.env.CLAWPI_CARTESIA_MODEL ?? "sonic-2";
+  const CARTESIA_API_VERSION = "2025-04-16";
+
+  api.registerTool({
+    name: "tts_cartesia",
+    description:
+      "Generate speech from text using Cartesia's Sonic TTS API. " +
+      "Returns the path to the generated WAV file. " +
+      "Cartesia offers ultra-low-latency, natural-sounding speech with emotion control. " +
+      "After generating, call audio_play with the returned path to play it.\n\n" +
+      "Requires services.clawpi.cartesia.enable = true in the NixOS config " +
+      "and an API key provisioned via ./scripts/provision-cartesia.sh.",
+    parameters: Type.Object({
+      text: Type.String({
+        description: "The text to convert to speech",
+      }),
+      voice: Type.Optional(
+        Type.String({
+          description: "Cartesia voice ID (uses NixOS default if omitted)",
+        }),
+      ),
+      model: Type.Optional(
+        Type.String({
+          description: 'Cartesia model ID, e.g. "sonic-2", "sonic-turbo" (uses NixOS default if omitted)',
+        }),
+      ),
+      language: Type.Optional(
+        Type.String({
+          description: 'Language code, e.g. "en", "de", "fr" (auto-detected if omitted)',
+        }),
+      ),
+      speed: Type.Optional(
+        Type.Number({
+          description: "Speech speed from 0.6 to 1.5 (default: normal)",
+          minimum: 0.6,
+          maximum: 1.5,
+        }),
+      ),
+    }),
+    async execute(
+      _id: string,
+      params: { text: string; voice?: string; model?: string; language?: string; speed?: number },
+    ) {
+      if (!CARTESIA_KEY_FILE) {
+        return text(
+          "Error: Cartesia is not enabled. " +
+          "Set services.clawpi.cartesia.enable = true in the NixOS config and redeploy.",
+        );
+      }
+
+      let apiKey: string | null = null;
+      try {
+        apiKey = (await readFile(CARTESIA_KEY_FILE, "utf-8")).trim() || null;
+      } catch {
+        // file missing or unreadable
+      }
+      if (!apiKey) {
+        return text(
+          "Error: Cartesia API key not found at " + CARTESIA_KEY_FILE + ". " +
+          "Provision it with: ./scripts/provision-cartesia.sh",
+        );
+      }
+
+      const voiceId = params.voice ?? CARTESIA_DEFAULT_VOICE;
+      const modelId = params.model ?? CARTESIA_DEFAULT_MODEL;
+      const outDir = "/tmp/clawpi-tts-cartesia";
+      const outFile = join(outDir, `voice-${randomBytes(4).toString("hex")}.wav`);
+
+      await mkdir(outDir, { recursive: true });
+
+      const apiUrl = "https://api.cartesia.ai/tts/bytes";
+      const body: Record<string, unknown> = {
+        model_id: modelId,
+        transcript: params.text,
+        voice: { mode: "id", id: voiceId },
+        output_format: { container: "wav", encoding: "pcm_s16le", sample_rate: 44100 },
+      };
+      if (params.language) body.language = params.language;
+      if (params.speed) {
+        body.generation_config = { speed: params.speed === 1.0 ? "normal" : String(params.speed) };
+      }
+
+      if (DEBUG) {
+        console.error(`[tts_cartesia] POST ${apiUrl} model=${modelId} voice=${voiceId} text=${params.text.length} chars`);
+      }
+
+      const resp = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Cartesia-Version": CARTESIA_API_VERSION,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (DEBUG) {
+        const hdrs: Record<string, string> = {};
+        resp.headers.forEach((v, k) => { hdrs[k] = v; });
+        console.error(`[tts_cartesia] response status=${resp.status} headers=${JSON.stringify(hdrs)}`);
+      }
+
+      if (!resp.ok) {
+        const errBody = await resp.text().catch(() => "");
+        if (DEBUG) {
+          console.error(`[tts_cartesia] error body: ${errBody}`);
+        }
+        return text(`Error: Cartesia API returned ${resp.status}: ${errBody}`);
+      }
+
+      const buffer = Buffer.from(await resp.arrayBuffer());
+      await writeFile(outFile, buffer);
+
+      if (DEBUG) {
+        console.error(`[tts_cartesia] wrote ${buffer.length} bytes to ${outFile}`);
+      }
+
+      return text(
+        `Generated speech (${buffer.length} bytes, voice=${voiceId}, model=${modelId}).\n` +
+        `File: ${outFile}\n\n` +
+        `Play it with audio_play.`,
+      );
+    },
+  });
+
+  // ── Cartesia: list/search voices ──────────────────────────────
+  api.registerTool({
+    name: "tts_cartesia_voices",
+    description:
+      "Search and list available Cartesia voices. " +
+      "Returns voice IDs, names, descriptions, and languages. Use this to find the right " +
+      "voice ID for the tts_cartesia tool.",
+    parameters: Type.Object({
+      search: Type.Optional(
+        Type.String({
+          description: "Search term to filter by name, description, or voice ID",
+        }),
+      ),
+      gender: Type.Optional(
+        Type.String({
+          description: 'Filter by gender: "masculine", "feminine", "gender_neutral"',
+        }),
+      ),
+      limit: Type.Optional(
+        Type.Number({
+          description: "Max results to return (1–100, default 20)",
+          minimum: 1,
+          maximum: 100,
+        }),
+      ),
+    }),
+    async execute(
+      _id: string,
+      params: { search?: string; gender?: string; limit?: number },
+    ) {
+      if (!CARTESIA_KEY_FILE) {
+        return text(
+          "Error: Cartesia is not enabled. " +
+          "Set services.clawpi.cartesia.enable = true in the NixOS config and redeploy.",
+        );
+      }
+
+      let apiKey: string | null = null;
+      try {
+        apiKey = (await readFile(CARTESIA_KEY_FILE, "utf-8")).trim() || null;
+      } catch {
+        // file missing or unreadable
+      }
+      if (!apiKey) {
+        return text(
+          "Error: Cartesia API key not found at " + CARTESIA_KEY_FILE + ". " +
+          "Provision it with: ./scripts/provision-cartesia.sh",
+        );
+      }
+
+      const queryParams = new URLSearchParams();
+      if (params.search) queryParams.set("q", params.search);
+      if (params.gender) queryParams.set("gender", params.gender);
+      queryParams.set("limit", String(params.limit ?? 20));
+
+      const url = `https://api.cartesia.ai/voices?${queryParams}`;
+      if (DEBUG) {
+        console.error(`[tts_cartesia_voices] GET ${url}`);
+      }
+
+      const resp = await fetch(url, {
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Cartesia-Version": CARTESIA_API_VERSION,
+        },
+      });
+
+      if (!resp.ok) {
+        const errBody = await resp.text().catch(() => "");
+        return text(`Error: Cartesia API returned ${resp.status}: ${errBody}`);
+      }
+
+      const data = await resp.json() as {
+        data?: Array<{
+          id: string;
+          name: string;
+          description?: string;
+          language?: string;
+          gender?: string;
+        }>;
+        has_more?: boolean;
+      };
+
+      const voices = data.data ?? [];
+      if (voices.length === 0) {
+        return text("No voices found matching the query.");
+      }
+
+      const lines = voices.map((v) => {
+        const meta = [v.language, v.gender].filter(Boolean).join(", ");
+        return `- **${v.name}** (${v.id})${meta ? ` [${meta}]` : ""}${v.description ? ` — ${v.description}` : ""}`;
+      });
+
+      const header = data.has_more
+        ? `Showing ${voices.length} voices (more available):\n\n`
+        : "";
+
+      return text(header + lines.join("\n"));
+    },
+  });
+
   // ── TTS: high-quality via ElevenLabs ─────────────────────────────
   const ELEVENLABS_KEY_FILE = process.env.CLAWPI_ELEVENLABS_API_KEY_FILE;
   const ELEVENLABS_DEFAULT_VOICE = process.env.CLAWPI_ELEVENLABS_VOICE ?? "eokb0hhuVX3JuAiUKucB";
