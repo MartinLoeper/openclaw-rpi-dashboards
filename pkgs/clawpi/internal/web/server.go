@@ -55,7 +55,7 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *quicksh
 	// Kill any active pw-play process and hide the stop button
 	mux.HandleFunc("POST /api/tts/stop", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("tts stop: request received")
-		out, err := exec.Command("pkill", "-f", "pw-play").CombinedOutput()
+		out, err := exec.Command("/run/current-system/sw/bin/pkill", "-f", "pw-play").CombinedOutput()
 		if err != nil {
 			log.Printf("tts stop: pkill: %v (%s)", err, string(out))
 		} else {
@@ -73,7 +73,7 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *quicksh
 		log.Println("interrupt: request received")
 
 		// Kill any active TTS playback
-		if out, err := exec.Command("pkill", "-f", "pw-play").CombinedOutput(); err != nil {
+		if out, err := exec.Command("/run/current-system/sw/bin/pkill", "-f", "pw-play").CombinedOutput(); err != nil {
 			log.Printf("interrupt: pkill pw-play: %v (%s)", err, string(out))
 		}
 

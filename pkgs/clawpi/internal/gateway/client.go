@@ -64,12 +64,9 @@ func (c *Client) Abort() error {
 	req := map[string]any{
 		"type":   "req",
 		"id":     randomID(),
-		"method": "chat.send",
+		"method": "chat.abort",
 		"params": map[string]any{
-			"sessionKey":     sk,
-			"message":        "/stop",
-			"deliver":        true,
-			"idempotencyKey": randomID(),
+			"sessionKey": sk,
 		},
 	}
 
