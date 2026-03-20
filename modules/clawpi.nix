@@ -327,6 +327,16 @@ in
         '';
       };
 
+      allowFromFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = ''
+          Path to a file containing newline-separated Telegram user IDs
+          to add to allowFrom at service start. IDs are appended to any
+          statically configured allowFrom entries.
+        '';
+      };
+
       requireMentionInGroups = lib.mkOption {
         type = lib.types.bool;
         default = true;

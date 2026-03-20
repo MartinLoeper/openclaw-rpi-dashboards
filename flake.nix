@@ -261,6 +261,8 @@
               ];
               services.clawpi.telegram = {
                 enable = true;
+                groupPolicy = "open";
+                allowFromFile = "/var/lib/clawpi/telegram-allow-from";
                 streaming = "block";
                 blockStreaming = true;
                 replyToMode = "all";

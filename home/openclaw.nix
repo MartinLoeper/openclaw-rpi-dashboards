@@ -218,6 +218,18 @@ let
     streaming = lib.mkIf (tgCfg.streaming != null) tgCfg.streaming;
     blockStreaming = lib.mkIf (tgCfg.blockStreaming != null) tgCfg.blockStreaming;
   };
+
+  # Runtime patching: append user IDs from allowFromFile to channels.telegram.allowFrom.
+  patchTelegramAllowFromScript = pkgs.writeShellScript "patch-openclaw-telegram-allowfrom" ''
+    configFile="$HOME/.openclaw/openclaw.json"
+    allowFile="${toString tgCfg.allowFromFile}"
+    if [ -f "$configFile" ] && [ -f "$allowFile" ]; then
+      ids="$(${pkgs.coreutils}/bin/cat "$allowFile" | ${pkgs.gnused}/bin/sed '/^$/d' | ${pkgs.jq}/bin/jq -R 'tonumber' | ${pkgs.jq}/bin/jq -s '.')"
+      ${pkgs.jq}/bin/jq --argjson ids "$ids" '.channels.telegram.allowFrom = ((.channels.telegram.allowFrom // []) + $ids | unique)' \
+        "$configFile" > "$configFile.tmp" \
+        && ${pkgs.coreutils}/bin/mv "$configFile.tmp" "$configFile"
+    fi
+  '';
 in
 {
   # The gateway overwrites openclaw.json at runtime, which conflicts with
@@ -304,7 +316,8 @@ in
       ExecStartPre = [ (toString patchAgentsScript) ]
         ++ lib.optional audioCfg.enable (toString patchConfigScript)
         ++ lib.optional (allowedModelsCfg != []) (toString patchModelsScript)
-        ++ lib.optional mxCfg.enable (toString patchMatrixScript);
+        ++ lib.optional mxCfg.enable (toString patchMatrixScript)
+        ++ lib.optional (tgCfg.enable && tgCfg.allowFromFile != null) (toString patchTelegramAllowFromScript);
     };
   };
 
