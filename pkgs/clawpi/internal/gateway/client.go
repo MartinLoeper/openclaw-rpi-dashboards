@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -30,6 +31,10 @@ type Client struct {
 	OnMessage     func(text string)
 	OnDisconnect  func()
 	OnConnect     func()
+
+	mu         sync.Mutex
+	conn       *websocket.Conn
+	sessionKey string
 }
 
 func NewClient(url, token string) *Client {
@@ -40,6 +45,49 @@ func (c *Client) emitState(state AgentState, toolName string) {
 	if c.OnStateChange != nil {
 		c.OnStateChange(state, toolName)
 	}
+}
+
+// Abort sends a /stop command to the current agent session to cancel the active run.
+func (c *Client) Abort() error {
+	c.mu.Lock()
+	conn := c.conn
+	sk := c.sessionKey
+	c.mu.Unlock()
+
+	if conn == nil {
+		return fmt.Errorf("not connected")
+	}
+	if sk == "" {
+		sk = "main"
+	}
+
+	req := map[string]any{
+		"type":   "req",
+		"id":     randomID(),
+		"method": "chat.send",
+		"params": map[string]any{
+			"sessionKey":     sk,
+			"message":        "/stop",
+			"deliver":        true,
+			"idempotencyKey": randomID(),
+		},
+	}
+
+	data, err := json.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("marshal abort request: %w", err)
+	}
+
+	c.mu.Lock()
+	err = conn.WriteMessage(websocket.TextMessage, data)
+	c.mu.Unlock()
+
+	if err != nil {
+		return fmt.Errorf("send abort: %w", err)
+	}
+
+	log.Printf("abort: sent /stop to session %q", sk)
+	return nil
 }
 
 // Run connects to the gateway WebSocket and logs all received messages.
@@ -73,7 +121,16 @@ func (c *Client) connect() error {
 	if err != nil {
 		return fmt.Errorf("dial: %w", err)
 	}
-	defer conn.Close()
+	defer func() {
+		c.mu.Lock()
+		c.conn = nil
+		c.mu.Unlock()
+		conn.Close()
+	}()
+
+	c.mu.Lock()
+	c.conn = conn
+	c.mu.Unlock()
 
 	log.Printf("connected, waiting for challenge...")
 
@@ -86,7 +143,10 @@ func (c *Client) connect() error {
 		for {
 			select {
 			case <-ticker.C:
-				if err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(10*time.Second)); err != nil {
+				c.mu.Lock()
+				err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(10*time.Second))
+				c.mu.Unlock()
+				if err != nil {
 					return
 				}
 			case <-done:
@@ -148,7 +208,10 @@ func (c *Client) connect() error {
 				return fmt.Errorf("marshal connect request: %w", err)
 			}
 
-			if err := conn.WriteMessage(websocket.TextMessage, reqData); err != nil {
+			c.mu.Lock()
+			err = conn.WriteMessage(websocket.TextMessage, reqData)
+			c.mu.Unlock()
+			if err != nil {
 				return fmt.Errorf("send connect request: %w", err)
 			}
 
@@ -191,6 +254,13 @@ func (c *Client) handleEvent(msg *GatewayMessage, raw []byte) {
 	var agentEvent AgentEventData
 	if err := json.Unmarshal(eventData, &agentEvent); err != nil {
 		return
+	}
+
+	// Track session key for abort
+	if agentEvent.SessionKey != "" {
+		c.mu.Lock()
+		c.sessionKey = agentEvent.SessionKey
+		c.mu.Unlock()
 	}
 
 	switch agentEvent.Stream {

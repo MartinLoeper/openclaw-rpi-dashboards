@@ -137,10 +137,27 @@ ShellRoot {
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-        // Input mask: pass through everything except the message box area.
-        // When the message box is hidden, the mask is empty (full passthrough).
+        // Input mask: pass through everything except interactive elements.
+        // The interactiveArea covers the bottom strip where both the message box
+        // and interrupt button live.
         mask: Region {
-            item: messageBox.visible ? messageBox : null
+            item: interactiveArea.visible ? interactiveArea : null
+        }
+
+        Item {
+            id: interactiveArea
+            visible: messageBox.visible || interruptBtn.visible
+            anchors {
+                bottom: parent.bottom
+                left: parent.left
+                right: parent.right
+            }
+            // Height covers whichever element is taller (messageBox or interruptBtn)
+            height: {
+                var mbh = messageBox.visible ? messageBox.height + 20 : 0;  // 20 = bottomMargin
+                var ibh = interruptBtn.visible ? interruptBtn.height + 16 : 0; // 16 = bottomMargin
+                return Math.max(mbh, ibh);
+            }
         }
 
         // Border color helper: during flash, show solid color with flashOpacity;
@@ -342,10 +359,10 @@ ShellRoot {
             }
         }
 
-        // TTS stop button — bottom-right
+        // Interrupt button — bottom-right, visible during any active agent state or TTS
         Rectangle {
-            id: ttsStopBtn
-            visible: root.ttsPlaying
+            id: interruptBtn
+            visible: root.ttsPlaying || ["thinking", "responding", "tool_use"].indexOf(root.currentState) !== -1
             width: 120
             height: 44
             radius: 10
@@ -369,7 +386,7 @@ ShellRoot {
                 anchors.fill: parent
                 onClicked: {
                     var xhr = new XMLHttpRequest();
-                    xhr.open("POST", "http://localhost:3100/api/tts/stop");
+                    xhr.open("POST", "http://localhost:3100/api/interrupt");
                     xhr.send();
                 }
             }

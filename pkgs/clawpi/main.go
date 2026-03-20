@@ -28,14 +28,14 @@ func main() {
 
 	ctrl := quickshell.NewController(stateFile)
 
-	// Start web server with controller for TTS API
+	client := gateway.NewClient(cfg.GatewayURL, cfg.Token)
+
+	// Start web server with controller + gateway client for interrupt API
 	go func() {
-		if err := web.Serve(cfg.WebAddr, cfg.CanvasDir, cfg.CanvasArchiveDir, ctrl); err != nil {
+		if err := web.Serve(cfg.WebAddr, cfg.CanvasDir, cfg.CanvasArchiveDir, ctrl, client); err != nil {
 			log.Fatalf("web server: %v", err)
 		}
 	}()
-
-	client := gateway.NewClient(cfg.GatewayURL, cfg.Token)
 	client.Debug = cfg.Debug
 
 	client.OnConnect = func() {
