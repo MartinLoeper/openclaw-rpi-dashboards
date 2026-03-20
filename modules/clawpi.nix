@@ -146,6 +146,35 @@ in
       };
     };
 
+    cartesia = {
+      enable = lib.mkEnableOption "Cartesia cloud TTS (tts_cartesia tool)";
+
+      apiKeyFile = lib.mkOption {
+        type = lib.types.path;
+        default = "/var/lib/clawpi/cartesia-api-key";
+        description = ''
+          Path to a file containing the Cartesia API key.
+          Provision with: ./scripts/provision-cartesia.sh
+        '';
+      };
+
+      voice = lib.mkOption {
+        type = lib.types.str;
+        default = "a0e99841-438c-4a64-b679-ae501e7d6091";
+        description = ''
+          Default Cartesia voice ID.
+        '';
+      };
+
+      model = lib.mkOption {
+        type = lib.types.str;
+        default = "sonic-2";
+        description = ''
+          Cartesia model ID (e.g. sonic-2, sonic-turbo).
+        '';
+      };
+    };
+
     elevenlabs = {
       enable = lib.mkEnableOption "ElevenLabs cloud TTS (tts_hq tool)";
 

@@ -19,6 +19,8 @@ ClawPi ships an OpenClaw plugin (`clawpi-tools`) that gives the agent hardware c
 | `audio_record` | Audio | `seconds?` (1–30) | Record audio from mic, returns WAV |
 | `audio_transcribe` | Audio | `seconds?` | Record and transcribe speech (Groq cloud or local whisper.cpp) |
 | `audio_play` | Audio | `path` | Play an audio file through the speakers |
+| `tts_cartesia` | Audio | `text`, `voice?`, `model?`, `language?`, `speed?` | TTS via Cartesia Sonic API |
+| `tts_cartesia_voices` | Audio | `search?`, `gender?`, `limit?` | Search and list Cartesia voices |
 | `tts_hq` | Audio | `text`, `voice?`, `model?` | High-quality TTS via ElevenLabs API |
 | `tts_stop` | Audio | — | Stop any currently playing audio |
 | `tts_hq_voices` | Audio | `search?`, `voice_type?`, `page_size?` | Search and list ElevenLabs voices |
@@ -156,6 +158,41 @@ Play an audio file through the default audio output (speakers). Supports WAV, MP
 **How it works:** WAV files are played directly via `pw-play`. Other formats (MP3, OGG, etc.) are first converted to WAV with `ffmpeg`, then played.
 
 **TTS integration:** The built-in `tts` tool generates speech as an MP3 file (e.g. `/tmp/openclaw/tts-.../voice-*.mp3`) and sends it as a Telegram voice message. To also play it through the Pi's speakers, the agent can call `audio_play` with the TTS output path. For higher quality, use `tts_hq` which generates via ElevenLabs.
+
+### `tts_cartesia`
+
+Generate speech from text using Cartesia's Sonic TTS API. Returns the path to a generated WAV file — call `audio_play` to play it through the speakers.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `text` | string | yes | — | Text to convert to speech |
+| `voice` | string | no | `a0e99841-438c-4a64-b679-ae501e7d6091` | Cartesia voice ID |
+| `model` | string | no | `sonic-2` | Cartesia model ID |
+| `language` | string | no | auto-detect | Language code (e.g. `en`, `de`, `fr`) |
+| `speed` | number | no | normal | Speech speed from 0.6 to 1.5 |
+
+**Returns:** File path to the generated WAV (e.g. `/tmp/clawpi-tts-cartesia/voice-*.wav`).
+
+**Setup:** Provision an API key with `./scripts/provision-cartesia.sh [host]`. The key is read from `/var/lib/clawpi/cartesia-api-key` at runtime.
+
+**Models:**
+
+| Model | Latency | Description |
+|-------|---------|-------------|
+| `sonic-2` | ~90ms | Most capable, ultra-realistic speech |
+| `sonic-turbo` | ~40ms | Half the latency of Sonic-2 |
+
+### `tts_cartesia_voices`
+
+Search and list available Cartesia voices. Returns voice IDs, names, descriptions, and languages.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `search` | string | no | — | Search term to filter by name, description, or voice ID |
+| `gender` | string | no | — | Filter: `"masculine"`, `"feminine"`, `"gender_neutral"` |
+| `limit` | number | no | 20 | Max results (1–100) |
+
+**Returns:** List of voices with IDs, names, descriptions, and languages.
 
 ### `tts_hq`
 
