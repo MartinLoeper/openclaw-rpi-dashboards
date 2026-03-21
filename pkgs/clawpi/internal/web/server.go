@@ -10,18 +10,19 @@ import (
 	"os/exec"
 	"time"
 
+	"clawpi/internal/gateway"
 	"clawpi/internal/quickshell"
 )
 
 //go:embed landing-page
 var landingFS embed.FS
 
-// TTSStopFunc is called when the TTS stop endpoint is hit.
-// Set by main to wire up the quickshell controller.
 var quickshellController *quickshell.Controller
+var gatewayClient *gateway.Client
 
-func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *quickshell.Controller) error {
+func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *quickshell.Controller, gw *gateway.Client) error {
 	quickshellController = ctrl
+	gatewayClient = gw
 
 	sub, err := fs.Sub(landingFS, "landing-page")
 	if err != nil {
@@ -54,7 +55,7 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *quicksh
 	// Kill any active pw-play process and hide the stop button
 	mux.HandleFunc("POST /api/tts/stop", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("tts stop: request received")
-		out, err := exec.Command("pkill", "-f", "pw-play").CombinedOutput()
+		out, err := exec.Command("/run/current-system/sw/bin/pkill", "-f", "pw-play").CombinedOutput()
 		if err != nil {
 			log.Printf("tts stop: pkill: %v (%s)", err, string(out))
 		} else {
@@ -63,6 +64,33 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *quicksh
 		if quickshellController != nil {
 			quickshellController.SetTTSPlaying(false)
 		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ok":true}`))
+	})
+
+	// Interrupt: abort the active agent run, kill TTS, reset state
+	mux.HandleFunc("POST /api/interrupt", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("interrupt: request received")
+
+		// Kill any active TTS playback
+		if out, err := exec.Command("/run/current-system/sw/bin/pkill", "-f", "pw-play").CombinedOutput(); err != nil {
+			log.Printf("interrupt: pkill pw-play: %v (%s)", err, string(out))
+		}
+
+		// Abort the agent run via gateway
+		if gatewayClient != nil {
+			if err := gatewayClient.Abort(); err != nil {
+				log.Printf("interrupt: abort: %v", err)
+			}
+		}
+
+		// Reset UI state
+		if quickshellController != nil {
+			quickshellController.SetTTSPlaying(false)
+			quickshellController.SetMessage("")
+			quickshellController.SetState(quickshell.StateIdle)
+		}
+
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"ok":true}`))
 	})

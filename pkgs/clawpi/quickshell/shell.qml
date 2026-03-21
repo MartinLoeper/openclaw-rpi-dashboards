@@ -137,10 +137,11 @@ ShellRoot {
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-        // Input mask: pass through everything except the message box area.
-        // When the message box is hidden, the mask is empty (full passthrough).
+        // Input mask: pass through everything except interactive elements.
+        // Use the messageBox when visible (it spans the bottom and covers the
+        // interrupt button area too), otherwise fall back to the interrupt button.
         mask: Region {
-            item: messageBox.visible ? messageBox : null
+            item: messageBox.visible ? messageBox : (interruptBtn.visible ? interruptBtn : null)
         }
 
         // Border color helper: during flash, show solid color with flashOpacity;
@@ -342,10 +343,10 @@ ShellRoot {
             }
         }
 
-        // TTS stop button — bottom-right
+        // Interrupt button — bottom-right, visible during any active agent state or TTS
         Rectangle {
-            id: ttsStopBtn
-            visible: root.ttsPlaying
+            id: interruptBtn
+            visible: root.ttsPlaying || ["thinking", "responding", "tool_use"].indexOf(root.currentState) !== -1
             width: 120
             height: 44
             radius: 10
@@ -369,7 +370,7 @@ ShellRoot {
                 anchors.fill: parent
                 onClicked: {
                     var xhr = new XMLHttpRequest();
-                    xhr.open("POST", "http://localhost:3100/api/tts/stop");
+                    xhr.open("POST", "http://localhost:3100/api/interrupt");
                     xhr.send();
                 }
             }
