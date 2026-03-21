@@ -43,7 +43,7 @@ Without `allowFrom`, any Telegram user who finds your bot can request pairing.
 ### 4. Deploy
 
 ```sh
-./scripts/deploy.sh openclaw-rpi5.local --specialisation kiosk
+./scripts/deploy.sh openclaw-rpi5.local
 ```
 
 ### 5. Approve Pairing
