@@ -211,6 +211,8 @@ let
         name = gid;
         value = { requireMention = tgCfg.requireMentionInGroups; };
       }) tgCfg.allowedGroups)
+    else if tgCfg.allowedGroupsFile != null then
+      { }  # groups will be populated at runtime from the file
     else
       { "*" = { requireMention = tgCfg.requireMentionInGroups; }; };
     replyToMode = lib.mkIf (tgCfg.replyToMode != null) tgCfg.replyToMode;
