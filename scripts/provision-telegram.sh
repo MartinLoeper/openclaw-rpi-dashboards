@@ -15,7 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TARGET_HOST="${1:-openclaw-rpi5.local}"
 KEY_FILE="${2:-${SCRIPT_DIR}/../id_ed25519_rpi5}"
 TOKEN_PATH="/var/lib/clawpi/telegram-bot-token"
-GROUP_ALLOW_PATH="/var/lib/clawpi/telegram-group-allow-from"
+GROUP_ALLOW_PATH="/var/lib/clawpi/telegram-allowed-groups"
 
 if [ ! -f "${KEY_FILE}" ]; then
   echo "Error: SSH key not found at ${KEY_FILE}"

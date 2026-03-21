@@ -206,8 +206,13 @@ let
     tokenFile = tgCfg.tokenFile;
     allowFrom = lib.mkIf (tgCfg.allowFrom != [ ]) tgCfg.allowFrom;
     groupPolicy = lib.mkIf (tgCfg.groupPolicy != null) tgCfg.groupPolicy;
-    groupAllowFrom = lib.mkIf (tgCfg.groupAllowFrom != [ ]) tgCfg.groupAllowFrom;
-    groups."*".requireMention = tgCfg.requireMentionInGroups;
+    groups = if tgCfg.allowedGroups != [ ] then
+      builtins.listToAttrs (map (gid: {
+        name = gid;
+        value = { requireMention = tgCfg.requireMentionInGroups; };
+      }) tgCfg.allowedGroups)
+    else
+      { "*" = { requireMention = tgCfg.requireMentionInGroups; }; };
     replyToMode = lib.mkIf (tgCfg.replyToMode != null) tgCfg.replyToMode;
     reactionLevel = lib.mkIf (tgCfg.reactionLevel != null) tgCfg.reactionLevel;
     reactionNotifications = lib.mkIf (tgCfg.reactionNotifications != null) tgCfg.reactionNotifications;
@@ -221,16 +226,18 @@ let
     blockStreaming = lib.mkIf (tgCfg.blockStreaming != null) tgCfg.blockStreaming;
   };
 
-  # Runtime patching: set group IDs from groupAllowFromFile via openclaw config set.
+  # Runtime patching: add group IDs from allowedGroupsFile to channels.telegram.groups.
   # Uses ExecStartPost (not ExecStartPre) because the gateway normalizes/overwrites
   # openclaw.json on startup, which would clobber any pre-start JSON patches.
-  patchTelegramGroupAllowFromScript = pkgs.writeShellScript "patch-openclaw-telegram-group-allowfrom" ''
-    allowFile="${toString tgCfg.groupAllowFromFile}"
+  patchTelegramAllowedGroupsScript = pkgs.writeShellScript "patch-openclaw-telegram-allowed-groups" ''
+    allowFile="${toString tgCfg.allowedGroupsFile}"
     if [ -f "$allowFile" ]; then
       # Wait for the gateway to finish its config normalization
       sleep 2
-      ids="$(${pkgs.coreutils}/bin/cat "$allowFile" | ${pkgs.gnused}/bin/sed '/^$/d' | ${pkgs.jq}/bin/jq -R 'tonumber' | ${pkgs.jq}/bin/jq -s '.')"
-      ${pkgs.openclaw-gateway}/bin/openclaw config set channels.telegram.groupAllowFrom "$ids"
+      while IFS= read -r gid || [ -n "$gid" ]; do
+        [ -z "$gid" ] && continue
+        ${pkgs.openclaw-gateway}/bin/openclaw config set "channels.telegram.groups.$gid.requireMention" ${if tgCfg.requireMentionInGroups then "true" else "false"}
+      done < "$allowFile"
     fi
   '';
 
@@ -339,7 +346,7 @@ in
         ++ lib.optional mxCfg.enable (toString patchMatrixScript)
         ++ lib.optional (tgCfg.enable && tgCfg.allowFromFile != null) (toString patchTelegramAllowFromScript);
       ExecStartPost =
-        lib.optional (tgCfg.enable && tgCfg.groupAllowFromFile != null) (toString patchTelegramGroupAllowFromScript);
+        lib.optional (tgCfg.enable && tgCfg.allowedGroupsFile != null) (toString patchTelegramAllowedGroupsScript);
     };
   };
 

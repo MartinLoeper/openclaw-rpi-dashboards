@@ -199,7 +199,7 @@
               services.clawpi.telegram = {
                 enable = true;
                 groupPolicy = "allowlist";
-                groupAllowFromFile = "/var/lib/clawpi/telegram-group-allow-from";
+                allowedGroupsFile = "/var/lib/clawpi/telegram-allowed-groups";
 
                 # Workaround for https://github.com/openclaw/openclaw/issues/34790
                 # Both properties prevent partial message edits in Telegram.
@@ -265,7 +265,7 @@
               services.clawpi.telegram = {
                 enable = true;
                 groupPolicy = "allowlist";
-                groupAllowFromFile = "/var/lib/clawpi/telegram-group-allow-from";
+                allowedGroupsFile = "/var/lib/clawpi/telegram-allowed-groups";
                 allowFromFile = "/var/lib/clawpi/telegram-allow-from";
                 streaming = "block";
                 blockStreaming = true;
@@ -327,7 +327,7 @@
               services.clawpi.telegram = {
                 enable = true;
                 groupPolicy = "allowlist";
-                groupAllowFromFile = "/var/lib/clawpi/telegram-group-allow-from";
+                allowedGroupsFile = "/var/lib/clawpi/telegram-allowed-groups";
 
                 # Workaround for https://github.com/openclaw/openclaw/issues/34790
                 streaming = "block";
@@ -464,7 +464,7 @@
                 streaming = "block";
                 blockStreaming = true;
                 groupPolicy = "allowlist";
-                groupAllowFromFile = "/var/lib/clawpi/telegram-group-allow-from";
+                allowedGroupsFile = "/var/lib/clawpi/telegram-allowed-groups";
                 requireMentionInGroups = true;
                 replyToMode = "all";
                 ackReaction = "👀";
