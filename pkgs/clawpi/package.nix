@@ -2,7 +2,7 @@
 
 buildGoModule {
   pname = "clawpi";
-  version = "0.4.3";
+  version = "0.4.4";
 
   src = lib.cleanSource ./.;
 

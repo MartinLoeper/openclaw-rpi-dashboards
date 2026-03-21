@@ -138,26 +138,10 @@ ShellRoot {
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
         // Input mask: pass through everything except interactive elements.
-        // The interactiveArea covers the bottom strip where both the message box
-        // and interrupt button live.
+        // Use the messageBox when visible (it spans the bottom and covers the
+        // interrupt button area too), otherwise fall back to the interrupt button.
         mask: Region {
-            item: interactiveArea.visible ? interactiveArea : null
-        }
-
-        Item {
-            id: interactiveArea
-            visible: messageBox.visible || interruptBtn.visible
-            anchors {
-                bottom: parent.bottom
-                left: parent.left
-                right: parent.right
-            }
-            // Height covers whichever element is taller (messageBox or interruptBtn)
-            height: {
-                var mbh = messageBox.visible ? messageBox.height + 20 : 0;  // 20 = bottomMargin
-                var ibh = interruptBtn.visible ? interruptBtn.height + 16 : 0; // 16 = bottomMargin
-                return Math.max(mbh, ibh);
-            }
+            item: messageBox.visible ? messageBox : (interruptBtn.visible ? interruptBtn : null)
         }
 
         // Border color helper: during flash, show solid color with flashOpacity;
