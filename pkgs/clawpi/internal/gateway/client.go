@@ -47,8 +47,10 @@ func (c *Client) emitState(state AgentState, toolName string) {
 	}
 }
 
-// Abort cancels the active agent run for the current session and clears queued
-// followups. Uses chat.abort which preserves conversation history.
+// Abort resets the current agent session, which aborts any active embedded run
+// (e.g. Telegram), clears the message queue, and stops sub-agents.
+// Uses sessions.reset because chat.abort only handles WebSocket-initiated runs,
+// not channel-initiated (embedded) runs like Telegram.
 func (c *Client) Abort() error {
 	c.mu.Lock()
 	conn := c.conn
@@ -65,15 +67,15 @@ func (c *Client) Abort() error {
 	req := map[string]any{
 		"type":   "req",
 		"id":     randomID(),
-		"method": "chat.abort",
+		"method": "sessions.reset",
 		"params": map[string]any{
-			"sessionKey": sk,
+			"key": sk,
 		},
 	}
 
 	data, err := json.Marshal(req)
 	if err != nil {
-		return fmt.Errorf("marshal abort request: %w", err)
+		return fmt.Errorf("marshal reset request: %w", err)
 	}
 
 	c.mu.Lock()
@@ -81,10 +83,10 @@ func (c *Client) Abort() error {
 	c.mu.Unlock()
 
 	if err != nil {
-		return fmt.Errorf("send abort: %w", err)
+		return fmt.Errorf("send reset: %w", err)
 	}
 
-	log.Printf("abort: sent chat.abort for %q", sk)
+	log.Printf("abort: sent sessions.reset for %q", sk)
 	return nil
 }
 
