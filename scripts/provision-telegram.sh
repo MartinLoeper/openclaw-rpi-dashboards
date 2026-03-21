@@ -1,18 +1,21 @@
 #!/usr/bin/env bash
-# Provision a Telegram bot token on the Pi.
+# Provision a Telegram bot token and optional group allowlist on the Pi.
 #
 # Usage: ./scripts/provision-telegram.sh [host] [key_file]
 #
 # This script:
 # 1. Prompts for the bot token (from @BotFather)
 # 2. Writes it to /var/lib/clawpi/telegram-bot-token on the Pi
-# 3. Prints the next steps (get chat ID, enable in NixOS config)
+# 3. Optionally prompts for group IDs to allowlist
+# 4. Writes them to /var/lib/clawpi/telegram-group-allow-from on the Pi
+# 5. Prints the next steps
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TARGET_HOST="${1:-openclaw-rpi5.local}"
 KEY_FILE="${2:-${SCRIPT_DIR}/../id_ed25519_rpi5}"
 TOKEN_PATH="/var/lib/clawpi/telegram-bot-token"
+GROUP_ALLOW_PATH="/var/lib/clawpi/telegram-group-allow-from"
 
 if [ ! -f "${KEY_FILE}" ]; then
   echo "Error: SSH key not found at ${KEY_FILE}"
@@ -38,6 +41,24 @@ echo ""
 echo "Writing token to ${TARGET_HOST}:${TOKEN_PATH}..."
 ${SSH} "sudo mkdir -p /var/lib/clawpi && echo -n '${BOT_TOKEN}' | sudo tee ${TOKEN_PATH} > /dev/null && sudo chown kiosk:kiosk ${TOKEN_PATH} && sudo chmod 600 ${TOKEN_PATH}"
 echo "Done."
+
+echo ""
+echo "=== Group Allowlist ==="
+echo ""
+echo "If you use groupPolicy = \"allowlist\", you can restrict which Telegram"
+echo "groups the bot responds in. Add the bot to a group, then get the group"
+echo "ID by adding @RawDataBot — it will print the chat ID (e.g. -1001234567890)."
+echo ""
+read -rp "Enter group IDs to allowlist (space-separated, or leave empty to skip): " GROUP_IDS
+
+if [ -n "${GROUP_IDS}" ]; then
+  # Convert space-separated IDs to newline-separated
+  GROUP_IDS_NL="$(echo "${GROUP_IDS}" | tr ' ' '\n')"
+  echo ""
+  echo "Writing group allowlist to ${TARGET_HOST}:${GROUP_ALLOW_PATH}..."
+  ${SSH} "echo '${GROUP_IDS_NL}' | sudo tee ${GROUP_ALLOW_PATH} > /dev/null && sudo chown kiosk:kiosk ${GROUP_ALLOW_PATH} && sudo chmod 600 ${GROUP_ALLOW_PATH}"
+  echo "Done."
+fi
 
 echo ""
 echo "=== Next Steps ==="

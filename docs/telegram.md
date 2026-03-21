@@ -68,6 +68,34 @@ services.clawpi.telegram = {
 };
 ```
 
+### Group Allowlist
+
+To restrict which groups the bot responds in, set `groupPolicy` to `"allowlist"` and provide group IDs via a file on the Pi:
+
+```nix
+services.clawpi.telegram = {
+  enable = true;
+  groupPolicy = "allowlist";
+  groupAllowFromFile = "/var/lib/clawpi/telegram-group-allow-from";
+};
+```
+
+The file contains one group ID per line (e.g. `-1001234567890`). The provisioning script can create this file for you:
+
+```sh
+./scripts/provision-telegram.sh [host]
+```
+
+To get a group's ID, add **@RawDataBot** to the group — it will print the chat ID.
+
+You can also set group IDs statically in the NixOS config:
+
+```nix
+services.clawpi.telegram.groupAllowFrom = [ "-1001234567890" ];
+```
+
+Static `groupAllowFrom` entries and file-based `groupAllowFromFile` entries are merged at service start.
+
 ## Architecture
 
 ```
