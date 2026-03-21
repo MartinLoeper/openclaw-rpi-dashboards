@@ -221,15 +221,16 @@ let
     blockStreaming = lib.mkIf (tgCfg.blockStreaming != null) tgCfg.blockStreaming;
   };
 
-  # Runtime patching: append group IDs from groupAllowFromFile to channels.telegram.groupAllowFrom.
+  # Runtime patching: set group IDs from groupAllowFromFile via openclaw config set.
+  # Uses ExecStartPost (not ExecStartPre) because the gateway normalizes/overwrites
+  # openclaw.json on startup, which would clobber any pre-start JSON patches.
   patchTelegramGroupAllowFromScript = pkgs.writeShellScript "patch-openclaw-telegram-group-allowfrom" ''
-    configFile="$HOME/.openclaw/openclaw.json"
     allowFile="${toString tgCfg.groupAllowFromFile}"
-    if [ -f "$configFile" ] && [ -f "$allowFile" ]; then
-      ids="$(${pkgs.coreutils}/bin/cat "$allowFile" | ${pkgs.gnused}/bin/sed '/^$/d' | ${pkgs.jq}/bin/jq -R '.' | ${pkgs.jq}/bin/jq -s '.')"
-      ${pkgs.jq}/bin/jq --argjson ids "$ids" '.channels.telegram.groupAllowFrom = ((.channels.telegram.groupAllowFrom // []) + $ids | unique)' \
-        "$configFile" > "$configFile.tmp" \
-        && ${pkgs.coreutils}/bin/mv "$configFile.tmp" "$configFile"
+    if [ -f "$allowFile" ]; then
+      # Wait for the gateway to finish its config normalization
+      sleep 2
+      ids="$(${pkgs.coreutils}/bin/cat "$allowFile" | ${pkgs.gnused}/bin/sed '/^$/d' | ${pkgs.jq}/bin/jq -R 'tonumber' | ${pkgs.jq}/bin/jq -s '.')"
+      ${pkgs.openclaw-gateway}/bin/openclaw config set channels.telegram.groupAllowFrom "$ids"
     fi
   '';
 
@@ -336,8 +337,9 @@ in
         ++ lib.optional audioCfg.enable (toString patchConfigScript)
         ++ lib.optional (allowedModelsCfg != []) (toString patchModelsScript)
         ++ lib.optional mxCfg.enable (toString patchMatrixScript)
-        ++ lib.optional (tgCfg.enable && tgCfg.allowFromFile != null) (toString patchTelegramAllowFromScript)
-        ++ lib.optional (tgCfg.enable && tgCfg.groupAllowFromFile != null) (toString patchTelegramGroupAllowFromScript);
+        ++ lib.optional (tgCfg.enable && tgCfg.allowFromFile != null) (toString patchTelegramAllowFromScript);
+      ExecStartPost =
+        lib.optional (tgCfg.enable && tgCfg.groupAllowFromFile != null) (toString patchTelegramGroupAllowFromScript);
     };
   };
 
