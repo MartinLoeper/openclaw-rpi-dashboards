@@ -378,6 +378,22 @@ in
         description = "Group message policy. null uses the gateway default (allowlist).";
       };
 
+      groupAllowFrom = lib.mkOption {
+        type = lib.types.listOf (lib.types.oneOf [ lib.types.str lib.types.int ]);
+        default = [ ];
+        description = "Telegram group IDs allowed to interact with the bot when groupPolicy is 'allowlist'.";
+      };
+
+      groupAllowFromFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = ''
+          Path to a file containing newline-separated Telegram group IDs
+          to add to groupAllowFrom at service start. IDs are appended to any
+          statically configured groupAllowFrom entries.
+        '';
+      };
+
       streaming = lib.mkOption {
         type = lib.types.nullOr (lib.types.oneOf [
           lib.types.bool
