@@ -84,11 +84,10 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *quicksh
 			}
 		}
 
-		// Reset UI state
+		// Reset TTS state; don't force idle — let gateway lifecycle events
+		// drive the state so we can observe whether the abort actually worked.
 		if quickshellController != nil {
 			quickshellController.SetTTSPlaying(false)
-			quickshellController.SetMessage("")
-			quickshellController.SetState(quickshell.StateIdle)
 		}
 
 		w.WriteHeader(http.StatusOK)
