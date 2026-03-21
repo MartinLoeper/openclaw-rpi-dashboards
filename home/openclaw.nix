@@ -7,6 +7,7 @@ let
   canvasCfg = osConfig.services.clawpi.canvas;
   canvasDir = if canvasCfg.tmpfs then "/tmp/clawpi-canvas" else "/var/lib/kiosk/.openclaw/canvas";
   canvasArchiveDir = "/var/lib/kiosk/.openclaw/canvas-archive";
+  cartesiaCfg = osConfig.services.clawpi.cartesia;
   elevenlabsCfg = osConfig.services.clawpi.elevenlabs;
   powerCfg = osConfig.services.clawpi.powerControl;
   mxCfg = osConfig.services.clawpi.matrix;
@@ -205,7 +206,15 @@ let
     tokenFile = tgCfg.tokenFile;
     allowFrom = lib.mkIf (tgCfg.allowFrom != [ ]) tgCfg.allowFrom;
     groupPolicy = lib.mkIf (tgCfg.groupPolicy != null) tgCfg.groupPolicy;
-    groups."*".requireMention = tgCfg.requireMentionInGroups;
+    groups = if tgCfg.allowedGroups != [ ] then
+      builtins.listToAttrs (map (gid: {
+        name = gid;
+        value = { requireMention = tgCfg.requireMentionInGroups; };
+      }) tgCfg.allowedGroups)
+    else if tgCfg.allowedGroupsFile != null then
+      { }  # groups will be populated at runtime from the file
+    else
+      { "*" = { requireMention = tgCfg.requireMentionInGroups; }; };
     replyToMode = lib.mkIf (tgCfg.replyToMode != null) tgCfg.replyToMode;
     reactionLevel = lib.mkIf (tgCfg.reactionLevel != null) tgCfg.reactionLevel;
     reactionNotifications = lib.mkIf (tgCfg.reactionNotifications != null) tgCfg.reactionNotifications;
@@ -218,6 +227,21 @@ let
     streaming = lib.mkIf (tgCfg.streaming != null) tgCfg.streaming;
     blockStreaming = lib.mkIf (tgCfg.blockStreaming != null) tgCfg.blockStreaming;
   };
+
+  # Runtime patching: add group IDs from allowedGroupsFile to channels.telegram.groups.
+  # Uses ExecStartPost (not ExecStartPre) because the gateway normalizes/overwrites
+  # openclaw.json on startup, which would clobber any pre-start JSON patches.
+  patchTelegramAllowedGroupsScript = pkgs.writeShellScript "patch-openclaw-telegram-allowed-groups" ''
+    allowFile="${toString tgCfg.allowedGroupsFile}"
+    if [ -f "$allowFile" ]; then
+      # Wait for the gateway to finish its config normalization
+      sleep 2
+      while IFS= read -r gid || [ -n "$gid" ]; do
+        [ -z "$gid" ] && continue
+        ${pkgs.openclaw-gateway}/bin/openclaw config set "channels.telegram.groups.$gid.requireMention" ${if tgCfg.requireMentionInGroups then "true" else "false"}
+      done < "$allowFile"
+    fi
+  '';
 
   # Runtime patching: append user IDs from allowFromFile to channels.telegram.allowFrom.
   patchTelegramAllowFromScript = pkgs.writeShellScript "patch-openclaw-telegram-allowfrom" ''
@@ -307,6 +331,11 @@ in
       Environment =
         [ "CLAWPI_CANVAS_DIR=${canvasDir}" "CLAWPI_CANVAS_ARCHIVE_DIR=${canvasArchiveDir}" ]
         ++ lib.optional debugCfg "OPENCLAW_LOG_LEVEL=debug"
+        ++ lib.optionals cartesiaCfg.enable [
+          "CLAWPI_CARTESIA_API_KEY_FILE=${toString cartesiaCfg.apiKeyFile}"
+          "CLAWPI_CARTESIA_VOICE=${cartesiaCfg.voice}"
+          "CLAWPI_CARTESIA_MODEL=${cartesiaCfg.model}"
+        ]
         ++ lib.optionals elevenlabsCfg.enable [
           "CLAWPI_ELEVENLABS_API_KEY_FILE=${toString elevenlabsCfg.apiKeyFile}"
           "CLAWPI_ELEVENLABS_VOICE=${elevenlabsCfg.voice}"
@@ -318,6 +347,8 @@ in
         ++ lib.optional (allowedModelsCfg != []) (toString patchModelsScript)
         ++ lib.optional mxCfg.enable (toString patchMatrixScript)
         ++ lib.optional (tgCfg.enable && tgCfg.allowFromFile != null) (toString patchTelegramAllowFromScript);
+      ExecStartPost =
+        lib.optional (tgCfg.enable && tgCfg.allowedGroupsFile != null) (toString patchTelegramAllowedGroupsScript);
     };
   };
 

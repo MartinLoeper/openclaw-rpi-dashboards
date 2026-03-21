@@ -146,6 +146,35 @@ in
       };
     };
 
+    cartesia = {
+      enable = lib.mkEnableOption "Cartesia cloud TTS (tts_cartesia tool)";
+
+      apiKeyFile = lib.mkOption {
+        type = lib.types.path;
+        default = "/var/lib/clawpi/cartesia-api-key";
+        description = ''
+          Path to a file containing the Cartesia API key.
+          Provision with: ./scripts/provision-cartesia.sh
+        '';
+      };
+
+      voice = lib.mkOption {
+        type = lib.types.str;
+        default = "a0e99841-438c-4a64-b679-ae501e7d6091";
+        description = ''
+          Default Cartesia voice ID.
+        '';
+      };
+
+      model = lib.mkOption {
+        type = lib.types.str;
+        default = "sonic-2";
+        description = ''
+          Cartesia model ID (e.g. sonic-2, sonic-turbo).
+        '';
+      };
+    };
+
     elevenlabs = {
       enable = lib.mkEnableOption "ElevenLabs cloud TTS (tts_hq tool)";
 
@@ -347,6 +376,26 @@ in
         type = lib.types.nullOr (lib.types.enum [ "allowlist" "open" "disabled" ]);
         default = null;
         description = "Group message policy. null uses the gateway default (allowlist).";
+      };
+
+      allowedGroups = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = ''
+          Telegram group/chat IDs allowed to interact with the bot.
+          When non-empty, only these groups are listed under channels.telegram.groups
+          (replacing the default "*" wildcard). Requires groupPolicy = "allowlist".
+        '';
+      };
+
+      allowedGroupsFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = ''
+          Path to a file containing newline-separated Telegram group/chat IDs.
+          These are merged with any statically configured allowedGroups entries
+          at service start.
+        '';
       };
 
       streaming = lib.mkOption {

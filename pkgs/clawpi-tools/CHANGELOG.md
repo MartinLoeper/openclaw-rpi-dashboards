@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.3
+
+- Add `tts_cartesia` tool — text-to-speech via Cartesia Sonic API (WAV output, speed/language control)
+- Add `tts_cartesia_voices` tool — search and list Cartesia voices by name, gender, or description
+
 ## 0.11.2
 
 - `canvas_restore` now copies files from the archive instead of moving them (archive is preserved)
