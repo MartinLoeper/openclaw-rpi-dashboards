@@ -223,7 +223,7 @@ ShellRoot {
         // Auto-dismiss the message overlay after the agent finishes
         Timer {
             id: autoDismissTimer
-            interval: 20000
+            interval: 30000
             repeat: false
             onTriggered: win.dismissMessage()
         }
