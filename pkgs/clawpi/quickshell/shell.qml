@@ -215,17 +215,30 @@ ShellRoot {
         property bool messageVisible: false
 
         function dismissMessage() {
+            autoDismissTimer.stop();
             win.messageVisible = false;
             win.displayMessage = "";
+        }
+
+        // Auto-dismiss the message overlay after the agent finishes
+        Timer {
+            id: autoDismissTimer
+            interval: 30000
+            repeat: false
+            onTriggered: win.dismissMessage()
         }
 
         Connections {
             target: root
             function onCurrentStateChanged() {
                 if (root.currentState !== "idle") {
-                    // New activity — clear old message, show new one as it streams
+                    // New activity — cancel auto-dismiss, clear old message
+                    autoDismissTimer.stop();
                     win.displayMessage = "";
                     win.messageVisible = true;
+                } else if (win.messageVisible) {
+                    // Agent went idle — start auto-dismiss countdown
+                    autoDismissTimer.restart();
                 }
             }
             function onMessageChanged() {
